@@ -16,8 +16,6 @@ import os
 os.environ["MKL_THREADING_LAYER"] = "GNU"
 import numpy as np
 import numpy.random as npr
-# FIXME: port to torch
-import tensorflow as tf
 import torch
 import pickle
 import sys
@@ -44,421 +42,412 @@ def run_job(args, save_dir=None):
     if args.continue_run>-1:
         save_dir = os.path.join(SCRIPT_DIR, args.continue_run_filepath)
 
-    # tf.reset_default_graph()
-    # with tf.Session(config=get_gpu_config(args.use_gpu, args.gpu_frac)) as sess:
-    # FIXME: nik_ remove this loop
-    for _ in range(1):
-        ##############################################
-        ### initialize some commonly used parameters (from args)
-        ##############################################
+    ##############################################
+    ### initialize some commonly used parameters (from args)
+    ##############################################
 
-        env_name = args.env_name
-        continue_run = args.continue_run
-        K = args.K
-        num_iters = args.num_iters
-        num_trajectories_per_iter = args.num_trajectories_per_iter
-        horizon = args.horizon
+    env_name = args.env_name
+    continue_run = args.continue_run
+    K = args.K
+    num_iters = args.num_iters
+    num_trajectories_per_iter = args.num_trajectories_per_iter
+    horizon = args.horizon
 
-        ### set seeds
-        npr.seed(args.seed)
-        torch.random.manual_seed(args.seed)
+    ### set seeds
+    npr.seed(args.seed)
+    torch.random.manual_seed(args.seed)
 
-        #######################
-        ### hardcoded args
-        #######################
+    #######################
+    ### hardcoded args
+    #######################
 
-        ### data types
-        args.torch_datatype = torch.float32
-        args.np_datatype = np.float32
+    ### data types
+    args.torch_datatype = torch.float32
+    args.np_datatype = np.float32
 
-        ### supervised learning noise, added to the training dataset
-        args.noiseToSignal = 0.01
+    ### supervised learning noise, added to the training dataset
+    args.noiseToSignal = 0.01
 
-        ### these are for *during* MPC rollouts,
-        # they allow you to run the H-step candidate actions on the real dynamics
-        # and compare the model's predicted outcomes vs. the true outcomes
-        execute_sideRollouts = False
-        plot_sideRollouts = True
+    ### these are for *during* MPC rollouts,
+    # they allow you to run the H-step candidate actions on the real dynamics
+    # and compare the model's predicted outcomes vs. the true outcomes
+    execute_sideRollouts = False
+    plot_sideRollouts = True
 
-        ########################################
-        ### create loader, env, rand policy
-        ########################################
+    ########################################
+    ### create loader, env, rand policy
+    ########################################
 
-        loader = Loader(save_dir)
-        env, dt_from_xml = create_env(env_name)
-        args.dt_from_xml = dt_from_xml
-        random_policy = Policy_Random(env.env)
+    loader = Loader(save_dir)
+    env, dt_from_xml = create_env(env_name)
+    args.dt_from_xml = dt_from_xml
+    random_policy = Policy_Random(env.env)
 
-        #doing a render here somehow allows it to not produce a seg fault error later when visualizing
-        if args.visualize_MPC_rollout:
-            render_env(env)
-            render_stop(env)
+    #doing a render here somehow allows it to not produce a seg fault error later when visualizing
+    if args.visualize_MPC_rollout:
+        render_env(env)
+        render_stop(env)
 
-        #################################################
-        ### initialize or load in info
-        #################################################
+    #################################################
+    ### initialize or load in info
+    #################################################
 
-        #check for a variable which indicates that we should duplicate each data point
-        #e.g., for baoding, since ballA/B are interchangeable, we store as 2 different points
-        if 'duplicateData_switchObjs' in dir(env.unwrapped_env):
-            duplicateData_switchObjs = True
-            indices_for_switching = [env.unwrapped_env.objInfo_start1, env.unwrapped_env.objInfo_start2,
-                                    env.unwrapped_env.targetInfo_start1, env.unwrapped_env.targetInfo_start2]
-        else:
-            duplicateData_switchObjs = False
-            indices_for_switching=[]
+    #check for a variable which indicates that we should duplicate each data point
+    #e.g., for baoding, since ballA/B are interchangeable, we store as 2 different points
+    if 'duplicateData_switchObjs' in dir(env.unwrapped_env):
+        duplicateData_switchObjs = True
+        indices_for_switching = [env.unwrapped_env.objInfo_start1, env.unwrapped_env.objInfo_start2,
+                                env.unwrapped_env.targetInfo_start1, env.unwrapped_env.targetInfo_start2]
+    else:
+        duplicateData_switchObjs = False
+        indices_for_switching=[]
 
-        #initialize data processor
-        data_processor = DataProcessor(args, duplicateData_switchObjs, indices_for_switching)
+    #initialize data processor
+    data_processor = DataProcessor(args, duplicateData_switchObjs, indices_for_switching)
 
-        #start a fresh run
-        if continue_run==-1:
+    #start a fresh run
+    if continue_run==-1:
 
-            #random training/validation data
-            if args.load_existing_random_data:
-                rollouts_trainRand, rollouts_valRand = loader.load_initialData()
-            else:
-
-                #training
-                rollouts_trainRand = collect_random_rollouts(
-                    env, random_policy, args.num_rand_rollouts_train,
-                    args.rand_rollout_length, dt_from_xml, args)
-                #validation
-                rollouts_valRand = collect_random_rollouts(
-                    env, random_policy, args.num_rand_rollouts_val,
-                    args.rand_rollout_length, dt_from_xml, args)
-
-            #convert (rollouts --> dataset)
-            dataset_trainRand = data_processor.convertRolloutsToDatasets(
-                rollouts_trainRand)
-            dataset_valRand = data_processor.convertRolloutsToDatasets(
-                rollouts_valRand)
-
-            #onPol train/val data
-            dataset_trainOnPol = Dataset()
-            rollouts_trainOnPol = []
-            rollouts_valOnPol = []
-
-            #lists for saving
-            trainingLoss_perIter = []
-            rew_perIter = []
-            scores_perIter = []
-            trainingData_perIter = []
-
-            #initialize counter
-            counter = 0
-
-        #continue from an existing run
-        else:
-
-            #load data
-            iter_data = loader.load_iter(continue_run-1)
-
-            #random data
+        #random training/validation data
+        if args.load_existing_random_data:
             rollouts_trainRand, rollouts_valRand = loader.load_initialData()
+        else:
 
-            #onPol data
-            rollouts_trainOnPol = iter_data.train_rollouts_onPol
-            rollouts_valOnPol = iter_data.val_rollouts_onPol
+            #training
+            rollouts_trainRand = collect_random_rollouts(
+                env, random_policy, args.num_rand_rollouts_train,
+                args.rand_rollout_length, dt_from_xml, args)
+            #validation
+            rollouts_valRand = collect_random_rollouts(
+                env, random_policy, args.num_rand_rollouts_val,
+                args.rand_rollout_length, dt_from_xml, args)
 
-            #convert (rollouts --> dataset)
-            dataset_trainRand = data_processor.convertRolloutsToDatasets(
-                rollouts_trainRand)
-            dataset_valRand = data_processor.convertRolloutsToDatasets(
-                rollouts_valRand)
+        #convert (rollouts --> dataset)
+        dataset_trainRand = data_processor.convertRolloutsToDatasets(
+            rollouts_trainRand)
+        dataset_valRand = data_processor.convertRolloutsToDatasets(
+            rollouts_valRand)
 
-            #lists for saving
-            trainingLoss_perIter = iter_data.training_losses
-            rew_perIter = iter_data.rollouts_rewardsPerIter
-            scores_perIter = iter_data.rollouts_scoresPerIter
-            trainingData_perIter = iter_data.training_numData
+        #onPol train/val data
+        dataset_trainOnPol = Dataset()
+        rollouts_trainOnPol = []
+        rollouts_valOnPol = []
 
-            #initialize counter
-            counter = continue_run
-            #how many iters to train for
-            num_iters += continue_run
+        #lists for saving
+        trainingLoss_perIter = []
+        rew_perIter = []
+        scores_perIter = []
+        trainingData_perIter = []
 
-        ### check data dims
-        inputSize, outputSize, acSize = check_dims(dataset_trainRand, env)
+        #initialize counter
+        counter = 0
 
-        ### amount of data
-        numData_train_rand = get_num_data(rollouts_trainRand)
+    #continue from an existing run
+    else:
 
-        ##############################################
-        ### dynamics model + controller
-        ##############################################
+        #load data
+        iter_data = loader.load_iter(continue_run-1)
 
-        dyn_models = Dyn_Model(inputSize, outputSize, acSize, params=args)
+        #random data
+        rollouts_trainRand, rollouts_valRand = loader.load_initialData()
 
-        mpc_rollout = MPCRollout(env, dyn_models, random_policy,
-                                 execute_sideRollouts, plot_sideRollouts, args)
+        #onPol data
+        rollouts_trainOnPol = iter_data.train_rollouts_onPol
+        rollouts_valOnPol = iter_data.val_rollouts_onPol
 
-        ### init TF variables
-        # sess.run(tf.global_variables_initializer())
+        #convert (rollouts --> dataset)
+        dataset_trainRand = data_processor.convertRolloutsToDatasets(
+            rollouts_trainRand)
+        dataset_valRand = data_processor.convertRolloutsToDatasets(
+            rollouts_valRand)
 
-        ##############################################
-        ###  saver
-        ##############################################
+        #lists for saving
+        trainingLoss_perIter = iter_data.training_losses
+        rew_perIter = iter_data.rollouts_rewardsPerIter
+        scores_perIter = iter_data.rollouts_scoresPerIter
+        trainingData_perIter = iter_data.training_numData
 
-        saver = Saver(save_dir)
-        saver.save_initialData(args, rollouts_trainRand, rollouts_valRand)
+        #initialize counter
+        counter = continue_run
+        #how many iters to train for
+        num_iters += continue_run
 
-        ##############################################
-        ### THE MAIN LOOP
-        ##############################################
+    ### check data dims
+    inputSize, outputSize, acSize = check_dims(dataset_trainRand, env)
 
-        firstTime = True
+    ### amount of data
+    numData_train_rand = get_num_data(rollouts_trainRand)
 
-        rollouts_info_prevIter, list_mpes, list_scores, list_rewards = None, None, None, None
-        while counter < num_iters:
+    ##############################################
+    ### dynamics model + controller
+    ##############################################
 
-            #init vars for this iteration
-            saver_data = DataPerIter()
-            saver.iter_num = counter
+    dyn_models = Dyn_Model(inputSize, outputSize, acSize, params=args)
 
-            #onPolicy validation doesn't exist yet, so just make it same as rand validation
-            if counter==0:
-                rollouts_valOnPol = rollouts_valRand
+    mpc_rollout = MPCRollout(env, dyn_models, random_policy,
+                             execute_sideRollouts, plot_sideRollouts, args)
 
-            #convert (rollouts --> dataset)
-            dataset_trainOnPol = data_processor.convertRolloutsToDatasets(
-                rollouts_trainOnPol)
-            dataset_valOnPol = data_processor.convertRolloutsToDatasets(
-                rollouts_valOnPol)
+    ##############################################
+    ###  saver
+    ##############################################
 
-            # amount of data
-            numData_train_onPol = get_num_data(rollouts_trainOnPol)
+    saver = Saver(save_dir)
+    saver.save_initialData(args, rollouts_trainRand, rollouts_valRand)
 
-            # mean/std of all data
-            data_processor.update_stats(dyn_models, dataset_trainRand, dataset_trainOnPol)
+    ##############################################
+    ### THE MAIN LOOP
+    ##############################################
 
-            #preprocess datasets to mean0/std1 + clip actions
-            preprocessed_data_trainRand = data_processor.preprocess_data(
-                dataset_trainRand)
-            preprocessed_data_valRand = data_processor.preprocess_data(
-                dataset_valRand)
-            preprocessed_data_trainOnPol = data_processor.preprocess_data(
-                dataset_trainOnPol)
-            preprocessed_data_valOnPol = data_processor.preprocess_data(
-                dataset_valOnPol)
+    firstTime = True
 
-            #convert datasets (x,y,z) --> training sets (inp, outp)
-            inputs, outputs = data_processor.xyz_to_inpOutp(
-                preprocessed_data_trainRand)
-            inputs_val, outputs_val = data_processor.xyz_to_inpOutp(
-                preprocessed_data_valRand)
-            inputs_onPol, outputs_onPol = data_processor.xyz_to_inpOutp(
-                preprocessed_data_trainOnPol)
-            inputs_val_onPol, outputs_val_onPol = data_processor.xyz_to_inpOutp(
-                preprocessed_data_valOnPol)
+    rollouts_info_prevIter, list_mpes, list_scores, list_rewards = None, None, None, None
+    while counter < num_iters:
 
-            #####################################
-            ## Training the model
-            #####################################
+        #init vars for this iteration
+        saver_data = DataPerIter()
+        saver.iter_num = counter
 
-            if (not (args.print_minimal)):
-                print("\n#####################################")
-                print("Training the dynamics model..... iteration ", counter)
-                print("#####################################\n")
-                print("    amount of random data: ", numData_train_rand)
-                print("    amount of onPol data: ", numData_train_onPol)
+        #onPolicy validation doesn't exist yet, so just make it same as rand validation
+        if counter==0:
+            rollouts_valOnPol = rollouts_valRand
 
-            ### copy train_onPol until it's big enough
-            if len(inputs_onPol)>0:
-                while inputs_onPol.shape[0]<inputs.shape[0]:
-                    inputs_onPol = np.concatenate([inputs_onPol, inputs_onPol])
-                    outputs_onPol = np.concatenate(
-                        [outputs_onPol, outputs_onPol])
+        #convert (rollouts --> dataset)
+        dataset_trainOnPol = data_processor.convertRolloutsToDatasets(
+            rollouts_trainOnPol)
+        dataset_valOnPol = data_processor.convertRolloutsToDatasets(
+            rollouts_valOnPol)
 
-            ### copy val_onPol until it's big enough
-            while inputs_val_onPol.shape[0]<args.batchsize:
-                inputs_val_onPol = np.concatenate(
-                    [inputs_val_onPol, inputs_val_onPol], 0)
-                outputs_val_onPol = np.concatenate(
-                    [outputs_val_onPol, outputs_val_onPol], 0)
+        # amount of data
+        numData_train_onPol = get_num_data(rollouts_trainOnPol)
 
-            #re-initialize all vars (randomly) if training from scratch
-            ##restore model if doing continue_run
-            if args.warmstart_training:
-                if firstTime:
-                    if continue_run>0:
-                        restore_path = save_dir + '/models/model_aggIter' + str(continue_run-1) + '.ckpt'
-                        dyn_models.networks = pickle.load(restore_path, 'rb')
-                        print("\n\nModel restored from ", restore_path, "\n\n")
-            # else:
-            #     sess.run(tf.global_variables_initializer())
+        # mean/std of all data
+        data_processor.update_stats(dyn_models, dataset_trainRand, dataset_trainOnPol)
 
-            #number of training epochs
-            if counter==0: nEpoch_use = args.nEpoch_init
-            else: nEpoch_use = args.nEpoch
+        #preprocess datasets to mean0/std1 + clip actions
+        preprocessed_data_trainRand = data_processor.preprocess_data(
+            dataset_trainRand)
+        preprocessed_data_valRand = data_processor.preprocess_data(
+            dataset_valRand)
+        preprocessed_data_trainOnPol = data_processor.preprocess_data(
+            dataset_trainOnPol)
+        preprocessed_data_valOnPol = data_processor.preprocess_data(
+            dataset_valOnPol)
 
-            #train model or restore model
-            if args.always_use_savedModel:
+        #convert datasets (x,y,z) --> training sets (inp, outp)
+        inputs, outputs = data_processor.xyz_to_inpOutp(
+            preprocessed_data_trainRand)
+        inputs_val, outputs_val = data_processor.xyz_to_inpOutp(
+            preprocessed_data_valRand)
+        inputs_onPol, outputs_onPol = data_processor.xyz_to_inpOutp(
+            preprocessed_data_trainOnPol)
+        inputs_val_onPol, outputs_val_onPol = data_processor.xyz_to_inpOutp(
+            preprocessed_data_valOnPol)
+
+        #####################################
+        ## Training the model
+        #####################################
+
+        if (not (args.print_minimal)):
+            print("\n#####################################")
+            print("Training the dynamics model..... iteration ", counter)
+            print("#####################################\n")
+            print("    amount of random data: ", numData_train_rand)
+            print("    amount of onPol data: ", numData_train_onPol)
+
+        ### copy train_onPol until it's big enough
+        if len(inputs_onPol)>0:
+            while inputs_onPol.shape[0]<inputs.shape[0]:
+                inputs_onPol = np.concatenate([inputs_onPol, inputs_onPol])
+                outputs_onPol = np.concatenate(
+                    [outputs_onPol, outputs_onPol])
+
+        ### copy val_onPol until it's big enough
+        while inputs_val_onPol.shape[0]<args.batchsize:
+            inputs_val_onPol = np.concatenate(
+                [inputs_val_onPol, inputs_val_onPol], 0)
+            outputs_val_onPol = np.concatenate(
+                [outputs_val_onPol, outputs_val_onPol], 0)
+
+        #re-initialize all vars (randomly) if training from scratch
+        ##restore model if doing continue_run
+        if args.warmstart_training:
+            if firstTime:
                 if continue_run>0:
                     restore_path = save_dir + '/models/model_aggIter' + str(continue_run-1) + '.ckpt'
-                else:
-                    restore_path = save_dir + '/models/finalModel.ckpt'
+                    dyn_models.networks = pickle.load(restore_path, 'rb')
+                    print("\n\nModel restored from ", restore_path, "\n\n")
 
-                saver.tf_saver.restore(sess, restore_path)
-                print("\n\nModel restored from ", restore_path, "\n\n")
+        #number of training epochs
+        if counter==0: nEpoch_use = args.nEpoch_init
+        else: nEpoch_use = args.nEpoch
 
-                #empty vars, for saving
-                training_loss = 0
-                training_lists_to_save = dict(
-                    training_loss_list = 0,
-                    val_loss_list_rand = 0,
-                    val_loss_list_onPol = 0,
-                    val_loss_list_xaxis = 0,
-                    rand_loss_list = 0,
-                    onPol_loss_list = 0,)
+        #train model or restore model
+        if args.always_use_savedModel:
+            if continue_run>0:
+                restore_path = save_dir + '/models/model_aggIter' + str(continue_run-1) + '.ckpt'
             else:
+                restore_path = save_dir + '/models/finalModel.ckpt'
 
-                ## train model
-                training_loss, training_lists_to_save = dyn_models.train(
-                    inputs,
-                    outputs,
-                    inputs_onPol,
-                    outputs_onPol,
-                    nEpoch_use,
-                    inputs_val=inputs_val,
-                    outputs_val=outputs_val,
-                    inputs_val_onPol=inputs_val_onPol,
-                    outputs_val_onPol=outputs_val_onPol)
+            saver.tf_saver.restore(sess, restore_path)
+            print("\n\nModel restored from ", restore_path, "\n\n")
 
-            #saving rollout info
-            rollouts_info = []
-            list_rewards = []
-            list_scores = []
-            list_mpes = []
+            #empty vars, for saving
+            training_loss = 0
+            training_lists_to_save = dict(
+                training_loss_list = 0,
+                val_loss_list_rand = 0,
+                val_loss_list_onPol = 0,
+                val_loss_list_xaxis = 0,
+                rand_loss_list = 0,
+                onPol_loss_list = 0,)
+        else:
+
+            ## train model
+            training_loss, training_lists_to_save = dyn_models.train(
+                inputs,
+                outputs,
+                inputs_onPol,
+                outputs_onPol,
+                nEpoch_use,
+                inputs_val=inputs_val,
+                outputs_val=outputs_val,
+                inputs_val_onPol=inputs_val_onPol,
+                outputs_val_onPol=outputs_val_onPol)
+
+        #saving rollout info
+        rollouts_info = []
+        list_rewards = []
+        list_scores = []
+        list_mpes = []
+
+        if not args.print_minimal:
+            print("\n#####################################")
+            print("performing on-policy MPC rollouts... iter ", counter)
+            print("#####################################\n")
+
+        for rollout_num in range(num_trajectories_per_iter):
+
+            ###########################################
+            ########## perform 1 MPC rollout
+            ###########################################
 
             if not args.print_minimal:
-                print("\n#####################################")
-                print("performing on-policy MPC rollouts... iter ", counter)
-                print("#####################################\n")
+                print("\n####################### Performing MPC rollout #",
+                      rollout_num)
 
-            for rollout_num in range(num_trajectories_per_iter):
+            #reset env randomly
+            starting_observation, starting_state = env.reset(return_start_state=True)
 
-                ###########################################
-                ########## perform 1 MPC rollout
-                ###########################################
+            rollout_info = mpc_rollout.perform_rollout(
+                starting_state,
+                starting_observation,
+                controller_type=args.controller_type,
+                take_exploratory_actions=False)
 
-                if not args.print_minimal:
-                    print("\n####################### Performing MPC rollout #",
-                          rollout_num)
+            # Note: can sometimes set take_exploratory_actions=True
+            # in order to use ensemble disagreement for exploration
 
-                #reset env randomly
-                starting_observation, starting_state = env.reset(return_start_state=True)
+            ###########################################
+            ####### save rollout info (if long enough)
+            ###########################################
 
-                rollout_info = mpc_rollout.perform_rollout(
-                    starting_state,
-                    starting_observation,
-                    controller_type=args.controller_type,
-                    take_exploratory_actions=False)
+            if len(rollout_info['observations']) > K:
+                list_rewards.append(rollout_info['rollout_rewardTotal'])
+                list_scores.append(rollout_info['rollout_meanFinalScore'])
+                list_mpes.append(np.mean(rollout_info['mpe_1step']))
+                rollouts_info.append(rollout_info)
 
-                # Note: can sometimes set take_exploratory_actions=True
-                # in order to use ensemble disagreement for exploration
+        rollouts_info_prevIter = rollouts_info.copy()
 
-                ###########################################
-                ####### save rollout info (if long enough)
-                ###########################################
+        # visualize, if desired
+        if args.visualize_MPC_rollout:
+            print("\n\nPAUSED FOR VISUALIZATION. Continue when ready to visualize.")
+            import IPython
+            IPython.embed()
+            for vis_index in range(len(rollouts_info)):
+                visualize_rendering(rollouts_info[vis_index], env, args)
 
-                if len(rollout_info['observations']) > K:
-                    list_rewards.append(rollout_info['rollout_rewardTotal'])
-                    list_scores.append(rollout_info['rollout_meanFinalScore'])
-                    list_mpes.append(np.mean(rollout_info['mpe_1step']))
-                    rollouts_info.append(rollout_info)
+        #########################################################
+        ### aggregate some random rollouts into training data
+        #########################################################
 
-            rollouts_info_prevIter = rollouts_info.copy()
+        num_rand_rollouts = 5
+        rollouts_rand = collect_random_rollouts(
+            env, random_policy, num_rand_rollouts, args.rollout_length,
+            dt_from_xml, args)
 
-            # visualize, if desired
-            if args.visualize_MPC_rollout:
-                print("\n\nPAUSED FOR VISUALIZATION. Continue when ready to visualize.")
-                import IPython
-                IPython.embed()
-                for vis_index in range(len(rollouts_info)):
-                    visualize_rendering(rollouts_info[vis_index], env, args)
+        #convert (rollouts --> dataset)
+        dataset_rand_new = data_processor.convertRolloutsToDatasets(
+            rollouts_rand)
 
-            #########################################################
-            ### aggregate some random rollouts into training data
-            #########################################################
+        #concat this dataset with the existing dataset_trainRand
+        dataset_trainRand = concat_datasets(dataset_trainRand,
+                                            dataset_rand_new)
 
-            num_rand_rollouts = 5
-            rollouts_rand = collect_random_rollouts(
-                env, random_policy, num_rand_rollouts, args.rollout_length,
-                dt_from_xml, args)
+        #########################################################
+        ### aggregate MPC rollouts into train/val
+        #########################################################
 
-            #convert (rollouts --> dataset)
-            dataset_rand_new = data_processor.convertRolloutsToDatasets(
-                rollouts_rand)
+        num_mpc_rollouts = len(rollouts_info)
+        rollouts_train = []
+        rollouts_val = []
 
-            #concat this dataset with the existing dataset_trainRand
-            dataset_trainRand = concat_datasets(dataset_trainRand,
-                                                dataset_rand_new)
+        for i in range(num_mpc_rollouts):
+            rollout = Rollout(rollouts_info[i]['observations'],
+                              rollouts_info[i]['actions'],
+                              rollouts_info[i]['rollout_rewardTotal'],
+                              rollouts_info[i]['starting_state'])
 
-            #########################################################
-            ### aggregate MPC rollouts into train/val
-            #########################################################
+            if i<int(num_mpc_rollouts * 0.9):
+                rollouts_train.append(rollout)
+            else:
+                rollouts_val.append(rollout)
 
-            num_mpc_rollouts = len(rollouts_info)
-            rollouts_train = []
-            rollouts_val = []
+        #aggregate into training data
+        if counter==0: rollouts_valOnPol = []
+        rollouts_trainOnPol = rollouts_trainOnPol + rollouts_train
+        rollouts_valOnPol = rollouts_valOnPol + rollouts_val
 
-            for i in range(num_mpc_rollouts):
-                rollout = Rollout(rollouts_info[i]['observations'],
-                                  rollouts_info[i]['actions'],
-                                  rollouts_info[i]['rollout_rewardTotal'],
-                                  rollouts_info[i]['starting_state'])
+        #########################################################
+        ### save everything about this iter of model training
+        #########################################################
 
-                if i<int(num_mpc_rollouts * 0.9):
-                    rollouts_train.append(rollout)
-                else:
-                    rollouts_val.append(rollout)
+        trainingData_perIter.append(numData_train_rand +
+                                    numData_train_onPol)
+        trainingLoss_perIter.append(training_loss)
 
-            #aggregate into training data
-            if counter==0: rollouts_valOnPol = []
-            rollouts_trainOnPol = rollouts_trainOnPol + rollouts_train
-            rollouts_valOnPol = rollouts_valOnPol + rollouts_val
+        ### stage relevant info for saving
+        saver_data.training_numData = trainingData_perIter
+        saver_data.training_losses = trainingLoss_perIter
+        saver_data.training_lists_to_save = training_lists_to_save
+        # Note: the on-policy rollouts include curr iter's rollouts
+        # (so next iter can be directly trained on these)
+        saver_data.train_rollouts_onPol = rollouts_trainOnPol
+        saver_data.val_rollouts_onPol = rollouts_valOnPol
+        saver_data.normalization_data = data_processor.get_normalization_data()
+        saver_data.counter = counter
 
-            #########################################################
-            ### save everything about this iter of model training
-            #########################################################
+        ### save all info from this training iteration
+        saver.save_model(dyn_models.networks)
+        saver.save_training_info(saver_data)
 
-            trainingData_perIter.append(numData_train_rand +
-                                        numData_train_onPol)
-            trainingLoss_perIter.append(training_loss)
+        #########################################################
+        ### save everything about this iter of MPC rollouts
+        #########################################################
 
-            ### stage relevant info for saving
-            saver_data.training_numData = trainingData_perIter
-            saver_data.training_losses = trainingLoss_perIter
-            saver_data.training_lists_to_save = training_lists_to_save
-            # Note: the on-policy rollouts include curr iter's rollouts
-            # (so next iter can be directly trained on these)
-            saver_data.train_rollouts_onPol = rollouts_trainOnPol
-            saver_data.val_rollouts_onPol = rollouts_valOnPol
-            saver_data.normalization_data = data_processor.get_normalization_data()
-            saver_data.counter = counter
+        # append onto rewards/scores
+        rew_perIter.append([np.mean(list_rewards), np.std(list_rewards)])
+        scores_perIter.append([np.mean(list_scores), np.std(list_scores)])
 
-            ### save all info from this training iteration
-            saver.save_model(dyn_models.networks)
-            saver.save_training_info(saver_data)
+        # save
+        saver_data.rollouts_rewardsPerIter = rew_perIter
+        saver_data.rollouts_scoresPerIter = scores_perIter
+        saver_data.rollouts_info = rollouts_info
+        saver.save_rollout_info(saver_data)
+        counter = counter + 1
 
-            #########################################################
-            ### save everything about this iter of MPC rollouts
-            #########################################################
-
-            # append onto rewards/scores
-            rew_perIter.append([np.mean(list_rewards), np.std(list_rewards)])
-            scores_perIter.append([np.mean(list_scores), np.std(list_scores)])
-
-            # save
-            saver_data.rollouts_rewardsPerIter = rew_perIter
-            saver_data.rollouts_scoresPerIter = scores_perIter
-            saver_data.rollouts_info = rollouts_info
-            saver.save_rollout_info(saver_data)
-            counter = counter + 1
-
-            firstTime = False
-        return
+        firstTime = False
+    return
 
 
 def main():

@@ -15,7 +15,6 @@
 import numpy as np
 import numpy.random as npr
 # FIXME: port to torch
-import tensorflow as tf
 import torch
 import time
 import math
@@ -50,58 +49,16 @@ class Dyn_Model:
         self.K = self.params.K
         self.torch_datatype = self.params.torch_datatype
 
-        ## create placeholders
-        # self.create_placeholders()
-
-        ## clip actions
-        # because MPPI sometimes tries to predict outcome
-        # of acs outside of range -1 to 1
-        # first, second = torch.split(self.inputs_, [(inputSize - self.acSize), self.acSize], 3)
-        # second = torch.clamp(second, -1, 1)
-        # self.inputs_clipped = torch.cat([first, second], dim=3)
-
-        ## define forward pass
-        # self.define_forward_pass()
-
 
     def define_forward_pass(self):
-
-        #optimizer
-        # self.opt = torch.optim.Adam(lr=self.params.lr)
-
-        # self.mses = []
-        # self.train_steps = []
 
         self.networks = []
 
         for i in range(self.ensemble_size):
 
-            # forward pass through this network
-            # this_output = feedforward_network(
-            #     self.inputs_clipped[i], self.outputSize,
-            #     self.params.num_fc_layers, self.params.depth_fc_layers)
-
-            # TODO: convert input states from tenspr to int for inputSize
             self.networks.append(feedforward_network(
                 self.inputSize, self.outputSize,
                 self.params.num_fc_layers, self.params.depth_fc_layers))
-            # self.curr_nn_outputs.append(this_output)
-
-            # loss of this network's predictions
-            # this_mse = tf.reduce_mean(
-            #     tf.square(self.labels_ - this_output))
-            # self.mses.append(this_mse)
-
-            # this network's weights
-            # this_theta = tf.get_collection(
-            #     tf.GraphKeys.TRAINABLE_VARIABLES, scope=str(i))
-
-            # train step for this network
-            # gv = [(g, v) for g, v in self.opt.compute_gradients(
-            #     this_mse, this_theta) if g is not None]
-            # self.train_steps.append(self.opt.apply_gradients(gv))
-
-        # self.predicted_outputs = self.curr_nn_outputs
 
 
     def train(self,
@@ -195,16 +152,6 @@ class Dyn_Model:
 
                     this_mse.backward()
                     self.opt.step()
-
-
-                    # this network's weights
-                    # this_theta = tf.get_collection(
-                    #     tf.GraphKeys.TRAINABLE_VARIABLES, scope=str(i))
-
-                    # train step for this network
-                    # gv = [(g, v) for g, v in self.opt.compute_gradients(
-                    #     this_mse, this_theta) if g is not None]
-                    # self.train_steps.append(self.opt.apply_gradients(gv))
 
                 self.predicted_outputs = self.curr_nn_outputs
                 losses = self.mses
@@ -332,8 +279,6 @@ class Dyn_Model:
             mses = []
 
             for i in range(self.ensemble_size):
-                # self.opt = torch.optim.Adam(self.networks[i].parameters(), lr=self.params.lr)
-                # self.opt.zero_grad()
                 inputState = torch.flatten(inputs_clipped[i], start_dim=1)
                 curr_output = self.networks[i].forward(inputState)
                 curr_nn_outputs.append(curr_output)
@@ -345,12 +290,6 @@ class Dyn_Model:
                 z_predictions_multiple = curr_nn_outputs
                 losses = mses
 
-            # z_predictions_multiple, losses = self.sess.run(
-            #     [self.curr_nn_outputs, self.mses],
-            #     feed_dict={
-            #         self.inputs_: this_dataX,
-            #         self.labels_: dataZ_batch
-            #     })
             loss = np.mean(losses)
 
             avg_loss += loss
@@ -427,8 +366,6 @@ class Dyn_Model:
                 curr_nn_outputs.append(curr_output)
             model_outputs = curr_nn_outputs
 
-            # model_outputs = self.sess.run([self.predicted_outputs],
-            #                             feed_dict={self.inputs_: inputs_list})
             model_output = np.array(model_outputs[0].detach())  #[ens, N,sDim]
 
             state_differences = np.multiply(
@@ -492,7 +429,6 @@ class Dyn_Model:
                 curr_output = self.networks[i].forward(inputState)
                 curr_nn_outputs.append(curr_output)
             model_outputs = curr_nn_outputs
-            # model_outputs = self.sess.run([self.predicted_outputs], feed_dict={self.inputs_: this_dataX})
             model_output = np.array(model_outputs[0].detach())
 
             #multiply by std and add mean back in
