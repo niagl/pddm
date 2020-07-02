@@ -72,7 +72,7 @@ def run_job(args, save_dir=None):
     # they allow you to run the H-step candidate actions on the real dynamics
     # and compare the model's predicted outcomes vs. the true outcomes
     execute_sideRollouts = False
-    plot_sideRollouts = True
+    plot_sideRollouts = False
 
     ########################################
     ### create loader, env, rand policy
@@ -288,7 +288,7 @@ def run_job(args, save_dir=None):
             else:
                 restore_path = save_dir + '/models/finalModel.ckpt'
 
-            saver.tf_saver.restore(sess, restore_path)
+            dyn_models.networks = pickle.load(restore_path, 'rb')
             print("\n\nModel restored from ", restore_path, "\n\n")
 
             #empty vars, for saving

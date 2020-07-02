@@ -207,5 +207,6 @@ class CEM(object):
                 if self.plot_sideRollouts:
                     plt.legend()
                     plt.show()
+                    plt.close()
 
         return best_action, resulting_states_list

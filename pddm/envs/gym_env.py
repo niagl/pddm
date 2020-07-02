@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import gym
-import pybullet_envs
+# import pybullet_envs
 import numpy as np
 
 class EnvSpec(object):
