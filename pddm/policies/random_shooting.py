@@ -176,5 +176,6 @@ class RandomShooting(object):
 
                 plt.legend()
                 plt.show()
+                plt.close()
 
         return best_action, resulting_states_list

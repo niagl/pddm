@@ -210,5 +210,6 @@ class MPPI(object):
                 if self.plot_sideRollouts:
                     plt.legend()
                     plt.show()
+                    plt.close()
 
         return selected_action, resulting_states_list

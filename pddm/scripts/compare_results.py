@@ -52,6 +52,7 @@ def main():
         plot_mean_std(rew[:, 0], rew[:, 1], label=args.labels[i], newfig=False, color=colors[i])
 
     plt.show()
+    plt.close()
 
 if __name__ == '__main__':
     main()
