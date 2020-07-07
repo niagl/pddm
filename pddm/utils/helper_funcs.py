@@ -17,12 +17,12 @@ import time
 # FIXME: port to torch
 import tensorflow as tf
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
+# import matplotlib
+# matplotlib.use('Agg')
+# import matplotlib.pyplot as plt
 import math
-from matplotlib import rc
-rc('font', **{'family': 'serif', 'serif': ['Palatino']})
+# from matplotlib import rc
+# rc('font', **{'family': 'serif', 'serif': ['Palatino']})
 
 import pddm.envs
 from pddm.envs.gym_env import GymEnv
@@ -267,66 +267,67 @@ def visualize_rendering(rollout_info,
                         visualize_mpes=False):
 
     ### reset env to the starting state
-    curr_state = env.reset(reset_state=rollout_info['starting_state'])
-
-    ### vars to specify here
-    which_index_to_plot = 1
-    slowdown = 1
-
-    mpe_1step = rollout_info['mpe_1step']
-    if visualize_mpes:
-        slowdown = 5
-        time.sleep(1.0)
-
-    traj_taken = []
-    traj_taken.append(curr_state)
-    count = 0
-
-    plotting_list = []
-    plotting_list.append(curr_state[which_index_to_plot])
-
-    lasttime = time.time()
-    starttime = time.time()
-    dt = args.dt_from_xml * slowdown
-
-    scores, rewards = [], []
-    for action in rollout_info['actions']:
-
-        if visualize_mpes:
-            print("    ", count)
-            plt.clf()
-            plt.plot(plotting_list)
-            plt.pause(0.1)
-
-        if action.shape[0] == 1:
-            next_state, rew, done, env_info = env.step(action[0])
-        else:
-            next_state, rew, done, env_info = env.step(action)
-
-        if (visualize):
-            render_env(env)
-
-        scores.append(env_info['score'])
-        rewards.append(rew)
-        just_one = True
-        curr_state = np.copy(next_state)
-        traj_taken.append(curr_state)
-
-        if visualize_mpes:
-            plotting_list.append(curr_state[which_index_to_plot])
-
-        ##time check
-        dt_check = time.time() - lasttime
-        while (dt_check < dt):
-            dt_check = time.time() - lasttime
-            pass
-        lasttime = time.time()
-        count += 1
-
-    print("Done taking ", count, " steps.")
-    print("FINAL REW: ", np.sum(rewards))
-    print("    TIME TAKEN : {:0.4f} s".format(time.time() - starttime))
-    return traj_taken, rewards, scores
+    pass
+    # curr_state = env.reset(reset_state=rollout_info['starting_state'])
+    #
+    # ### vars to specify here
+    # which_index_to_plot = 1
+    # slowdown = 1
+    #
+    # mpe_1step = rollout_info['mpe_1step']
+    # if visualize_mpes:
+    #     slowdown = 5
+    #     time.sleep(1.0)
+    #
+    # traj_taken = []
+    # traj_taken.append(curr_state)
+    # count = 0
+    #
+    # plotting_list = []
+    # plotting_list.append(curr_state[which_index_to_plot])
+    #
+    # lasttime = time.time()
+    # starttime = time.time()
+    # dt = args.dt_from_xml * slowdown
+    #
+    # scores, rewards = [], []
+    # for action in rollout_info['actions']:
+    #
+    #     if visualize_mpes:
+    #         print("    ", count)
+    #         plt.clf()
+    #         plt.plot(plotting_list)
+    #         plt.pause(0.1)
+    #
+    #     if action.shape[0] == 1:
+    #         next_state, rew, done, env_info = env.step(action[0])
+    #     else:
+    #         next_state, rew, done, env_info = env.step(action)
+    #
+    #     if (visualize):
+    #         render_env(env)
+    #
+    #     scores.append(env_info['score'])
+    #     rewards.append(rew)
+    #     just_one = True
+    #     curr_state = np.copy(next_state)
+    #     traj_taken.append(curr_state)
+    #
+    #     if visualize_mpes:
+    #         plotting_list.append(curr_state[which_index_to_plot])
+    #
+    #     ##time check
+    #     dt_check = time.time() - lasttime
+    #     while (dt_check < dt):
+    #         dt_check = time.time() - lasttime
+    #         pass
+    #     lasttime = time.time()
+    #     count += 1
+    #
+    # print("Done taking ", count, " steps.")
+    # print("FINAL REW: ", np.sum(rewards))
+    # print("    TIME TAKEN : {:0.4f} s".format(time.time() - starttime))
+    # return traj_taken, rewards, scores
 
 
 ###########################
