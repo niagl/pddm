@@ -17,7 +17,7 @@ import numpy as np
 # import tensorflow as tf
 import os
 import pickle
-from pddm.utils.helper_funcs import plot_mean_std
+# from pddm.utils.helper_funcs import plot_mean_std
 
 
 class Saver:
@@ -151,8 +151,8 @@ class Saver:
         #plot rewards and scores (for rollouts from all iterations thus far)
         rew = np.array(save_data.rollouts_rewardsPerIter)
         scores = np.array(save_data.rollouts_scoresPerIter)
-        plot_mean_std(rew[:, 0], rew[:, 1], self.save_dir + '/rewards_perIter')
-        plot_mean_std(scores[:, 0], scores[:, 1],
-                      self.save_dir + '/scores_perIter')
+        # plot_mean_std(rew[:, 0], rew[:, 1], self.save_dir + '/rewards_perIter')
+        # plot_mean_std(scores[:, 0], scores[:, 1],
+        #               self.save_dir + '/scores_perIter')
 
         self.iter_num = -7

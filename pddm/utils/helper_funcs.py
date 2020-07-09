@@ -410,36 +410,36 @@ def turn_acs_into_acsK(actions_taken_so_far, all_samples, K, N, horizon):
     return all_acs
 
 ## Plot
-def plot_mean_std(mean_data, std_data, filename=None, label=None, newfig=True, color='b'):
-
-    if newfig:
-        fig, ax = plt.subplots(1, figsize=(5, 10))
-        xvals = np.arange(len(mean_data))
-        if label is None:
-            ax.plot(xvals, mean_data, color=color)
-        else:
-            ax.plot(xvals, mean_data, color=color, label=label)
-            ax.legend()
-        ax.fill_between(
-            xvals,
-            mean_data - std_data,
-            mean_data + std_data,
-            color=color,
-            alpha=0.25)
-        if filename is not None:
-            fig.savefig(filename + '.png', dpi=200, bbox_inches='tight')
-    else:
-        xvals = np.arange(len(mean_data))
-        if label is None:
-            plt.plot(xvals, mean_data, color=color)
-        else:
-            plt.plot(xvals, mean_data, color=color, label=label)
-            plt.legend()
-        plt.fill_between(
-            xvals,
-            mean_data - std_data,
-            mean_data + std_data,
-            color=color,
-            alpha=0.25)
-        if filename is not None:
-            fig.savefig(filename + '.png', dpi=200, bbox_inches='tight')
+# def plot_mean_std(mean_data, std_data, filename=None, label=None, newfig=True, color='b'):
+#
+#     if newfig:
+#         fig, ax = plt.subplots(1, figsize=(5, 10))
+#         xvals = np.arange(len(mean_data))
+#         if label is None:
+#             ax.plot(xvals, mean_data, color=color)
+#         else:
+#             ax.plot(xvals, mean_data, color=color, label=label)
+#             ax.legend()
+#         ax.fill_between(
+#             xvals,
+#             mean_data - std_data,
+#             mean_data + std_data,
+#             color=color,
+#             alpha=0.25)
+#         if filename is not None:
+#             fig.savefig(filename + '.png', dpi=200, bbox_inches='tight')
+#     else:
+#         xvals = np.arange(len(mean_data))
+#         if label is None:
+#             plt.plot(xvals, mean_data, color=color)
+#         else:
+#             plt.plot(xvals, mean_data, color=color, label=label)
+#             plt.legend()
+#         plt.fill_between(
+#             xvals,
+#             mean_data - std_data,
+#             mean_data + std_data,
+#             color=color,
+#             alpha=0.25)
+#         if filename is not None:
+#             fig.savefig(filename + '.png', dpi=200, bbox_inches='tight')
