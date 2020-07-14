@@ -14,7 +14,6 @@
 
 import numpy as np
 import numpy.random as npr
-# FIXME: port to torch
 import torch
 import time
 import math
@@ -49,8 +48,10 @@ class Dyn_Model:
         self.K = self.params.K
         self.torch_datatype = self.params.torch_datatype
 
+        self.define_network_ensemble()
 
-    def define_forward_pass(self):
+
+    def define_network_ensemble(self):
 
         self.networks = []
 
@@ -136,7 +137,7 @@ class Dyn_Model:
                 self.mses = []
                 self.train_steps = []
 
-                self.define_forward_pass()
+
 
                 for i in range(self.ensemble_size):
 

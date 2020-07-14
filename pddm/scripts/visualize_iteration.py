@@ -18,6 +18,7 @@ import sys
 import os
 import argparse
 import traceback
+import torch
 
 #my imports
 from pddm.utils.helper_funcs import visualize_rendering
@@ -32,19 +33,19 @@ def vis_iter(args, load_dir):
 
     #params
     paramfile = open(load_dir + '/params.pkl', 'rb')
-    params = pickle.load(paramfile)
+    params = torch.load(paramfile)
     env_name = params.env_name
 
     #data to visualize
     if args.eval:
         with open(load_dir + '/saved_rollouts/rollouts_eval.pickle',
                   'rb') as handle:
-            rollouts_info = pickle.load(handle)
+            rollouts_info = torch.load(handle)
     else:
         with open(
                 load_dir + '/saved_rollouts/rollouts_info_' + str(args.iter_num) +
                 '.pickle', 'rb') as handle:
-            rollouts_info = pickle.load(handle)
+            rollouts_info = torch.load(handle)
 
     ##########################
     ## visualize

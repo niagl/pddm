@@ -17,7 +17,6 @@ os.environ["MKL_THREADING_LAYER"] = "GNU"
 import numpy as np
 import numpy.random as npr
 import torch
-import pickle
 import sys
 import argparse
 import traceback
@@ -201,8 +200,8 @@ def run_job(args, save_dir=None):
     firstTime = True
 
     rollouts_info_prevIter, list_mpes, list_scores, list_rewards = None, None, None, None
-    while counter < num_iters:
 
+    while counter < num_iters:
         #init vars for this iteration
         saver_data = DataPerIter()
         saver.iter_num = counter
@@ -274,7 +273,7 @@ def run_job(args, save_dir=None):
             if firstTime:
                 if continue_run>0:
                     restore_path = save_dir + '/models/model_aggIter' + str(continue_run-1) + '.ckpt'
-                    dyn_models.networks = pickle.load(restore_path, 'rb')
+                    dyn_models.networks = torch.load(restore_path, 'rb')
                     print("\n\nModel restored from ", restore_path, "\n\n")
 
         #number of training epochs
@@ -288,7 +287,7 @@ def run_job(args, save_dir=None):
             else:
                 restore_path = save_dir + '/models/finalModel.ckpt'
 
-            dyn_models.networks = pickle.load(restore_path, 'rb')
+            dyn_models.networks = torch.load(restore_path, 'rb')
             print("\n\nModel restored from ", restore_path, "\n\n")
 
             #empty vars, for saving
@@ -447,6 +446,7 @@ def run_job(args, save_dir=None):
         counter = counter + 1
 
         firstTime = False
+
     return
 
 
@@ -527,4 +527,6 @@ def main():
 
 
 if __name__ == '__main__':
+
     main()
+

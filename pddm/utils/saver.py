@@ -17,6 +17,7 @@ import numpy as np
 # import tensorflow as tf
 import os
 import pickle
+import torch
 # from pddm.utils.helper_funcs import plot_mean_std
 
 
@@ -42,16 +43,14 @@ class Saver:
 
     def save_initialData(self, params, rollouts_trainRand, rollouts_valRand):
 
-        pickle.dump(
+        torch.save(
             rollouts_trainRand,
-            open(self.save_dir + '/training_data/train_rollouts_rand.pickle', 'wb'),
-            pickle.HIGHEST_PROTOCOL)
-        pickle.dump(
+            open(self.save_dir + '/training_data/train_rollouts_rand.pickle', 'wb'))
+        torch.save(
             rollouts_valRand,
             open(self.save_dir + '/training_data/val_rollouts_rand.pickle',
-                 'wb'), pickle.HIGHEST_PROTOCOL)
-        pickle.dump(params, open(self.save_dir + '/params.pkl', 'wb'),
-                    pickle.HIGHEST_PROTOCOL)
+                 'wb'))
+        torch.save(params, open(self.save_dir + '/params.pkl', 'wb'))
 
     def save_model(self, networks):
 
@@ -62,15 +61,13 @@ class Saver:
 
         # save the model under current iteration number
         # but also update the finalModel.ckpt too
-        pickle.dump(
+        torch.save(
             networks,
             open(self.save_dir + '/models/model_aggIter' + str(
-                self.iter_num) + '.pickle', 'wb'),
-            pickle.HIGHEST_PROTOCOL)
-        pickle.dump(
+                self.iter_num) + '.pickle', 'wb'))
+        torch.save(
             networks,
-            open(self.save_dir + '/models/finalModel.pickle', 'wb'),
-            pickle.HIGHEST_PROTOCOL)
+            open(self.save_dir + '/models/finalModel.pickle', 'wb'))
         print("Model saved at ", self.save_dir+'/models')
 
     ############################################################################################
@@ -86,26 +83,23 @@ class Saver:
             IPython.embed()
 
         #on-policy training data (used in conjunction w random training data) to train the dynamics model at this iteration
-        pickle.dump(
+        torch.save(
             save_data.train_rollouts_onPol,
             open(
                 self.save_dir + '/training_data/train_rollouts_onPol_iter' +
-                str(self.iter_num) + '.pickle', 'wb'),
-            protocol=pickle.HIGHEST_PROTOCOL)
-        pickle.dump(
+                str(self.iter_num) + '.pickle', 'wb'))
+        torch.save(
             save_data.val_rollouts_onPol,
             open(
                 self.save_dir + '/training_data/val_rollouts_onPol_iter' + str(
-                    self.iter_num) + '.pickle', 'wb'),
-            protocol=pickle.HIGHEST_PROTOCOL)
+                    self.iter_num) + '.pickle', 'wb'))
 
         #mean/std info
-        pickle.dump(
+        torch.save(
             save_data.normalization_data,
             open(
                 self.save_dir + '/training_data/normalization_data_' + str(
-                    self.iter_num) + '.pickle', 'wb'),
-            protocol=pickle.HIGHEST_PROTOCOL)
+                    self.iter_num) + '.pickle', 'wb'))
 
         #losses and sample complexity
         np.save(self.save_dir + '/losses/list_training_loss.npy',
@@ -135,12 +129,11 @@ class Saver:
             IPython.embed()
 
         #info from all MPC rollouts (from this iteration)
-        pickle.dump(
+        torch.save(
             save_data.rollouts_info,
             open(
                 self.save_dir + '/saved_rollouts/rollouts_info_' + str(
-                    self.iter_num) + '.pickle', 'wb'),
-            protocol=pickle.HIGHEST_PROTOCOL)
+                    self.iter_num) + '.pickle', 'wb'))
 
         #save rewards and scores (for rollouts from all iterations thus far)
         np.save(self.save_dir + '/rollouts_rewardsPerIter.npy',

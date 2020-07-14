@@ -21,6 +21,7 @@ import argparse
 ## FIXME: port to torch
 import tensorflow as tf
 import traceback
+import torch
 
 #my imports
 from pddm.utils.helper_funcs import create_env
@@ -40,7 +41,7 @@ def run_eval(args, save_dir):
 
     ### read in params from saved config file
     paramfile = open(save_dir + '/params.pkl', 'rb')
-    params = pickle.load(paramfile)
+    params = torch.load(paramfile)
 
     ### can manually set some options here, for these eval runs (to override options from training)
     # params.kappa = 1
@@ -145,7 +146,7 @@ def run_eval(args, save_dir):
             rollouts.append(rollout_info)
 
         #save all eval rollouts
-        pickle.dump(
+        torch.save(
             rollouts,
             open(save_dir + '/saved_rollouts/rollouts_eval.pickle', 'wb'),
             protocol=pickle.HIGHEST_PROTOCOL)

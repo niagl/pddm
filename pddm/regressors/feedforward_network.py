@@ -40,7 +40,6 @@ class NetModel(torch.nn.Module):
     def forward(self, x):
         return self.network(x.float())
 
-# TODO: convert input states from tenspr to int for inputSize
 def feedforward_network(inputSize, outputSize, num_fc_layers,
                         depth_fc_layers):
 

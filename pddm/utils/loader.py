@@ -13,9 +13,8 @@
 # limitations under the License.
 
 import numpy as np
-import pickle
 from pddm.utils.data_structures import DataPerIter
-
+import torch
 
 class Loader:
 
@@ -24,9 +23,9 @@ class Loader:
 
     def load_initialData(self):
 
-        rollouts_trainRand = pickle.load(
+        rollouts_trainRand = torch.load(
             open(self.save_dir + '/training_data/train_rollouts_rand.pickle', 'rb'))
-        rollouts_valRand = pickle.load(
+        rollouts_valRand = torch.load(
             open(self.save_dir + '/training_data/val_rollouts_rand.pickle',
                  'rb'))
 
@@ -37,23 +36,23 @@ class Loader:
         data_iteration = DataPerIter()
 
         #info from all MPC rollouts (from this iteration)
-        data_iteration.rollouts_info = pickle.load(
+        data_iteration.rollouts_info = torch.load(
             open(
                 self.save_dir + '/saved_rollouts/rollouts_info_' + str(iter_num)
                 + '.pickle', 'rb'))
 
         #on-policy data (used in conjunction w random data) to train the dynamics model at this iteration
-        data_iteration.train_rollouts_onPol = pickle.load(
+        data_iteration.train_rollouts_onPol = torch.load(
             open(
                 self.save_dir + '/training_data/train_rollouts_onPol_iter' +
                 str(iter_num) + '.pickle', 'rb'))
-        data_iteration.val_rollouts_onPol = pickle.load(
+        data_iteration.val_rollouts_onPol = torch.load(
             open(
                 self.save_dir + '/training_data/val_rollouts_onPol_iter' +
                 str(iter_num) + '.pickle', 'rb'))
 
         #mean/std info
-        data_iteration.normalization_data = pickle.load(
+        data_iteration.normalization_data = torch.load(
             open(
                 self.save_dir + '/training_data/normalization_data_' +
                 str(iter_num) + '.pickle', 'rb'))
