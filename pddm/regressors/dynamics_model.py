@@ -17,6 +17,7 @@ import numpy.random as npr
 import torch
 import time
 import math
+from memory_profiler import profile
 
 #my imports
 from pddm.regressors.feedforward_network import feedforward_network
@@ -61,6 +62,65 @@ class Dyn_Model:
                 self.inputSize, self.outputSize,
                 self.params.num_fc_layers, self.params.depth_fc_layers))
 
+    def compute_loss(self, this_dataX, data_outputs_batch):
+
+        inputs_ = torch.from_numpy(this_dataX)
+        labels_ = torch.from_numpy(data_outputs_batch)
+
+        first, second = torch.split(inputs_, [(self.inputSize - self.acSize), self.acSize], 3)
+        second = torch.clamp(second, -1, 1)
+        self.inputs_clipped = torch.cat([first, second], dim=3)
+        self.curr_nn_outputs = []
+        self.mses = []
+        self.train_steps = []
+
+        for i in range(self.ensemble_size):
+            self.opt = torch.optim.Adam(self.networks[i].parameters(), lr=self.params.lr)
+            self.opt.zero_grad()
+            inputState = torch.flatten(self.inputs_clipped[i], start_dim=1)
+            curr_output = self.networks[i].forward(inputState)
+            self.curr_nn_outputs.append(curr_output)
+
+            this_mse = torch.mean(
+                torch.pow(labels_ - curr_output, 2))
+
+
+            this_mse.backward()
+            self.opt.step()
+            self.mses.append(this_mse.item())
+
+        self.predicted_outputs = self.curr_nn_outputs
+        losses = self.mses
+        outputs = self.curr_nn_outputs
+        true_output = labels_
+
+        return losses, outputs, true_output
+
+    def forward_pass(self, inputs, labels=None):
+
+        inputs_ = torch.from_numpy(inputs)
+        if labels is not None:
+            labels_ = torch.from_numpy(labels)
+
+        first, second = torch.split(inputs_, [(self.inputSize - self.acSize), self.acSize], 3)
+        second = torch.clamp(second, -1, 1)
+        inputs_clipped = torch.cat([first, second], dim=3)
+        curr_nn_outputs = []
+        mses = []
+
+        for i in range(self.ensemble_size):
+            inputState = torch.flatten(inputs_clipped[i], start_dim=1)
+            curr_output = self.networks[i].forward(inputState)
+            curr_nn_outputs.append(curr_output)
+            if labels is not None:
+                this_mse = torch.mean(
+                    torch.pow(labels_ - curr_output, 2))
+                mses.append(this_mse.detach().numpy())
+
+        z_predictions_multiple = curr_nn_outputs
+        losses = mses
+
+        return z_predictions_multiple, losses
 
     def train(self,
               data_inputs_rand,
@@ -127,42 +187,16 @@ class Dyn_Model:
                 this_dataX = np.tile(data_inputs_batch,
                                      (self.ensemble_size, 1, 1, 1))
 
-                inputs_ = torch.from_numpy(this_dataX)
-                labels_ = torch.from_numpy(data_outputs_batch)
+                # ---------------------------------------------------------------------------------------------------
 
-                first, second = torch.split(inputs_, [(self.inputSize - self.acSize), self.acSize], 3)
-                second = torch.clamp(second, -1, 1)
-                self.inputs_clipped = torch.cat([first, second], dim=3)
-                self.curr_nn_outputs = []
-                self.mses = []
-                self.train_steps = []
+                losses, outputs, true_output = self.compute_loss(this_dataX, data_outputs_batch)
 
+                # ---------------------------------------------------------------------------------------------------
 
+                loss = np.mean(losses)
 
-                for i in range(self.ensemble_size):
-
-                    self.opt = torch.optim.Adam(self.networks[i].parameters(), lr=self.params.lr)
-                    self.opt.zero_grad()
-                    inputState = torch.flatten(self.inputs_clipped[i], start_dim=1)
-                    curr_output = self.networks[i].forward(inputState)
-                    self.curr_nn_outputs.append(curr_output)
-
-                    this_mse = torch.mean(
-                        torch.pow(labels_ - curr_output, 2))
-                    self.mses.append(this_mse)
-
-                    this_mse.backward()
-                    self.opt.step()
-
-                self.predicted_outputs = self.curr_nn_outputs
-                losses = self.mses
-                outputs = self.curr_nn_outputs
-                true_output = labels_
-
-                loss = torch.mean(torch.stack(losses))
-
-                training_loss_list.append(loss)
-                sum_training_loss += loss
+                training_loss_list.append(loss.item())
+                sum_training_loss += loss.item()
                 num_training_batches += 1
 
             mean_training_loss = sum_training_loss / num_training_batches
@@ -235,7 +269,6 @@ class Dyn_Model:
         #done
         return mean_training_loss, lists_to_save
 
-
     def get_loss(self,
                  inputs,
                  outputs,
@@ -271,25 +304,7 @@ class Dyn_Model:
             #one iteration of feedforward training
             this_dataX = np.tile(dataX_batch, (self.ensemble_size, 1, 1, 1))
 
-            inputs_ = torch.from_numpy(this_dataX)
-            labels_ = torch.from_numpy(dataZ_batch)
-            first, second = torch.split(inputs_, [(self.inputSize - self.acSize), self.acSize], 3)
-            second = torch.clamp(second, -1, 1)
-            inputs_clipped = torch.cat([first, second], dim=3)
-            curr_nn_outputs = []
-            mses = []
-
-            for i in range(self.ensemble_size):
-                inputState = torch.flatten(inputs_clipped[i], start_dim=1)
-                curr_output = self.networks[i].forward(inputState)
-                curr_nn_outputs.append(curr_output)
-
-                this_mse = torch.mean(
-                    torch.pow(labels_ - curr_output, 2))
-                mses.append(this_mse)
-
-                z_predictions_multiple = curr_nn_outputs
-                losses = mses
+            z_predictions_multiple, losses = self.forward_pass(this_dataX, dataZ_batch)
 
             loss = np.mean(losses)
 
@@ -355,17 +370,7 @@ class Dyn_Model:
             inputs_list = np.concatenate((states_preprocessed, actions_preprocessed), axis=3)
 
             #run the N sims all at once
-            inputs_ = torch.from_numpy(inputs_list)
-            first, second = torch.split(inputs_, [(self.inputSize - self.acSize), self.acSize], 3)
-            second = torch.clamp(second, -1, 1)
-            inputs_clipped = torch.cat([first, second], dim=3)
-            curr_nn_outputs = []
-
-            for i in range(self.ensemble_size):
-                inputState = torch.flatten(inputs_clipped[i], start_dim=1)
-                curr_output = self.networks[i].forward(inputState)
-                curr_nn_outputs.append(curr_output)
-            model_outputs = curr_nn_outputs
+            model_outputs, _ = self.forward_pass(inputs_list)
 
             model_output = np.array(model_outputs[0].detach())  #[ens, N,sDim]
 
@@ -419,17 +424,8 @@ class Dyn_Model:
             #run through NN to get prediction
             this_dataX = np.tile(inputs_K_preprocessed, (self.ensemble_size, 1, 1, 1))
             #### TO DO... for now, just see 1st model's prediction
-            inputs_ = torch.from_numpy(this_dataX)
-            first, second = torch.split(inputs_, [(self.inputSize - self.acSize), self.acSize], 3)
-            second = torch.clamp(second, -1, 1)
-            inputs_clipped = torch.cat([first, second], dim=3)
-            curr_nn_outputs = []
+            model_outputs, _ = self.forward_pass(this_dataX)
 
-            for i in range(self.ensemble_size):
-                inputState = torch.flatten(inputs_clipped[i], start_dim=1)
-                curr_output = self.networks[i].forward(inputState)
-                curr_nn_outputs.append(curr_output)
-            model_outputs = curr_nn_outputs
             model_output = np.array(model_outputs[0].detach())
 
             #multiply by std and add mean back in
