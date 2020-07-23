@@ -17,7 +17,6 @@ import numpy.random as npr
 import torch
 import time
 import math
-from memory_profiler import profile
 
 #my imports
 from pddm.regressors.feedforward_network import feedforward_network
