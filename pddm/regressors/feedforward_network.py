@@ -13,36 +13,38 @@
 # limitations under the License.
 
 import torch
+import collections
 
 
 class NetModel(torch.nn.Module):
 
     def __init__(self, inputState, intermediate_size, num_fc_layers, outputSize):
         super().__init__()
-        network = []
-        fc_1 = torch.nn.Linear(inputState, intermediate_size)
-        torch.nn.init.xavier_uniform_(fc_1.weight)
-        network.append(fc_1)
-        network.append(torch.nn.ReLU())
+        network = collections.OrderedDict()
 
-        for _ in range(num_fc_layers):
-            fc_i = torch.nn.Linear(intermediate_size, intermediate_size)
-            torch.nn.init.xavier_uniform_(fc_i.weight)
-            network.append(fc_i)
-            network.append(torch.nn.ReLU())
+        network['layer_in'] = torch.nn.Linear(inputState, intermediate_size)
+        network['relu_in'] = torch.nn.ReLU()
 
-        fc_z = torch.nn.Linear(intermediate_size, outputSize)
-        torch.nn.init.xavier_uniform_(fc_z.weight)
-        network.append(fc_z)
+        for i in range(num_fc_layers - 1):
+            network['layer_' + str(i + 1)] = torch.nn.Linear(intermediate_size, intermediate_size)
+            network['relu_' + str(i + 1)] = torch.nn.ReLU()
 
-        self.network = torch.nn.Sequential(*network)
+        network['layer_out'] = torch.nn.Linear(intermediate_size, outputSize)
+
+        self.network = torch.nn.Sequential(network)
+        self.network.apply(self.init_weights_bias)
 
     def forward(self, x):
         return self.network(x.float())
+
+    def init_weights_bias(self, m):
+        if isinstance(m, torch.nn.Linear):
+            # torch.nn.init.xavier_uniform_(m.weight)
+            torch.nn.init.zeros_(m.weight)
+            torch.nn.init.zeros_(m.bias)
 
 def feedforward_network(inputSize, outputSize, num_fc_layers,
                         depth_fc_layers):
 
     intermediate_size = depth_fc_layers
-
     return NetModel(inputSize, intermediate_size, num_fc_layers, outputSize)
