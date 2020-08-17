@@ -39,12 +39,26 @@ class NetModel(torch.nn.Module):
 
     def init_weights_bias(self, m):
         if isinstance(m, torch.nn.Linear):
-            # torch.nn.init.xavier_uniform_(m.weight)
-            torch.nn.init.zeros_(m.weight)
-            torch.nn.init.zeros_(m.bias)
+            torch.nn.init.xavier_uniform_(m.weight)
+            # torch.nn.init.xavier_uniform_(m.bias)
+            # torch.nn.init.zeros_(m.weight)
+            # torch.nn.init.constant_(m.weight, 0.5)
+            torch.nn.init.constant_(m.bias, 0)
 
 def feedforward_network(inputSize, outputSize, num_fc_layers,
                         depth_fc_layers):
 
     intermediate_size = depth_fc_layers
     return NetModel(inputSize, intermediate_size, num_fc_layers, outputSize)
+
+class myDataset(torch.utils.data.Dataset):
+    def __init__(self, x, y):
+        self.X = x
+        self.Y = y
+        pass
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, index):
+        return self.X[index], self.Y[index]
