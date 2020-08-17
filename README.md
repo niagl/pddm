@@ -1,11 +1,15 @@
 # PDDM
 
-<img src="https://github.com/google-research/pddm/blob/master/pddm/gifs/dclaw_gif.gif" height="200" /> <img src="https://github.com/google-research/pddm/blob/master/pddm/gifs/cube_gif.gif" height="200" /> <img src="https://github.com/google-research/pddm/blob/master/pddm/gifs/handwriting_gif.gif" height="200" /> <img src="https://github.com/google-research/pddm/blob/master/pddm/gifs/baoding_gif.gif" height="200" />
 
-[[Project Page]](https://bit.ly/pddm2019) [[Paper]](https://arxiv.org/abs/1909.11652)
+ [[PDDM Paper]](https://arxiv.org/abs/1909.11652)  [[C-51 Paper]](https://arxiv.org/abs/1707.06887)
+
+Combined 2 Papers PDDM and C-51(distrib algo) to learn risk-free actions in complex environments
 
 **Deep Dynamics Models for Learning Dexterous Manipulation**<br/>
 [Anusha Nagabandi](https://people.eecs.berkeley.edu/~nagaban2/), Kurt Konolige, Sergey Levine, [Vikash Kumar](https://vikashplus.github.io/).
+
+**A Distributional Perspective on Reinforcement Learning**<br/>
+Marc G. Bellemare, Will Dabney, Rémi Munos
 
 Please note that this is research code, and as such, is still under construction. This code implements the model-based RL algorithm presented in PDDM. Please contact Anusha Nagabandi for questions or concerns. <br/><br/>
 
@@ -68,51 +72,6 @@ To see available parameters to set, see the files in the configs folder, as well
 
 
 
-
-## C. Train and visualize some tests ##
-
-Cheetah:
-```bash
-python train.py --config ../config/short_cheetah_test.txt --output_dir ../output --use_gpu
-MJPL python visualize_iteration.py --job_path ../output/short_cheetah_test --iter_num 0
-```
-
-Ant:
-```bash
-python train.py --config ../config/short_ant_test.txt --output_dir ../output --use_gpu
-MJPL python visualize_iteration.py --job_path ../output/short_ant_test --iter_num 0
-```
-
-Dclaw turn valve: <br/>
-Note that this will not actually quite work, but might be reasonable.
-```bash
-python train.py --config ../config/short_dclaw_turn_test.txt --output_dir ../output --use_gpu
-MJPL python visualize_iteration.py --job_path ../output/short_dclaw_turn_test --iter_num 0
-```
-
-Dclaw turn valve:<br/>
-Note that this will work well but also take a while to run, because it's using ground-truth Mujoco dynamics for planning. It should take approximately 6 minutes on a standard laptop without any GPU.
-```bash
-python train.py --config ../config/test_dclaw_turn_gt.txt --output_dir ../output --use_gpu
-MJPL python visualize_iteration.py --job_path ../output/dclaw_turn_gt --iter_num 0
-```
-
-Shadowhand in-hand cube rotation:<br/>
-Note that this will work well but also take a while to run, because it's using ground-truth Mujoco dynamics for planning. It should take approximately 6 minutes on a standard laptop without any GPU.
-```bash
-python train.py --config ../config/test_cube_gt.txt --output_dir ../output --use_gpu
-MJPL python visualize_iteration.py --job_path ../output/cube_gt --iter_num 0
-```
-
-Shadowhand Baoding balls:<br/>
-Note that this will work well but also take a while to run, because it's using ground-truth Mujoco dynamics for planning. It should take approximately 20 minutes on a standard laptop without any GPU.
-```bash
-python train.py --config ../config/test_baoding_gt.txt --output_dir ../output --use_gpu
-MJPL python visualize_iteration.py --job_path ../output/baoding_gt --iter_num 0
-```
-<br/><br/>
-
-
 ## D. Run experiments ##
 
 **Train:**
@@ -121,25 +80,4 @@ MJPL python visualize_iteration.py --job_path ../output/baoding_gt --iter_num 0
 python train.py --config ../config/dclaw_turn.txt --output_dir ../output --use_gpu
 python train.py --config ../config/baoding.txt --output_dir ../output --use_gpu
 python train.py --config ../config/cube.txt --output_dir ../output --use_gpu
-```
-
-**Evaluate a pre-trained model:**
-
-```bash
-python eval_iteration.py --job_path ../output/dclaw_turn --iter_num 0 --num_eval_rollouts 1 --eval_run_length 40
-```
-
-**Visualize:**
-
-```bash
-MJPL python visualize_iteration.py --job_path ../output/dclaw_turn --eval
-MJPL python visualize_iteration.py --job_path ../output/dclaw_turn --iter_num 0
-```
-
-**Compare runs:**
-
-Plot rewards (or scores) of multiple runs on the same plot. Note that custom labels are optional:
-```bash
-python compare_results.py -j ../output/runA ../output/runB -l 'mycustomlabel runA' -l 'mycustomlabel runB' --plot_rew
-python compare_results.py -j ../output/runA ../output/runB -l 'mycustomlabel runA' -l 'mycustomlabel runB'
 ```
