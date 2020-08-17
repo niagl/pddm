@@ -51,7 +51,7 @@
 ##########################
 
 ## collect random rollouts
-'load_existing_random_data': [False],
+'load_existing_random_data': [True],
 'num_rand_rollouts_train': [100],
 'num_rand_rollouts_val': [50],
 'rand_rollout_length': [30],
@@ -77,7 +77,7 @@
 'warmstart_training': [False],
 'always_use_savedModel': [False],
 'batchsize': [512],
-'lr': [0.001],
+'lr': [0.005],
 'nEpoch': [40],
 'nEpoch_init': [40],
 

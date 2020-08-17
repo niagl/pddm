@@ -15,7 +15,7 @@
 import copy
 import time
 # FIXME: port to torch
-import tensorflow as tf
+# import tensorflow as tf
 import numpy as np
 # import matplotlib
 # matplotlib.use('Agg')
@@ -58,18 +58,18 @@ def create_env(env_name):
 
 
 def get_gpu_config(use_gpu, gpu_frac=0.6):
-
-    if use_gpu:
-        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=gpu_frac)
-        config = tf.ConfigProto(
-            gpu_options=gpu_options,
-            log_device_placement=False,
-            allow_soft_placement=True,
-            inter_op_parallelism_threads=1,
-            intra_op_parallelism_threads=1)
-    else:
-        config = tf.ConfigProto(device_count={'GPU': 0})
-    return config
+    pass
+    # if use_gpu:
+    #     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=gpu_frac)
+    #     config = tf.ConfigProto(
+    #         gpu_options=gpu_options,
+    #         log_device_placement=False,
+    #         allow_soft_placement=True,
+    #         inter_op_parallelism_threads=1,
+    #         intra_op_parallelism_threads=1)
+    # else:
+    #     config = tf.ConfigProto(device_count={'GPU': 0})
+    # return config
 
 
 ###########################

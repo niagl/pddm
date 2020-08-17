@@ -17,9 +17,14 @@ import numpy.random as npr
 import torch
 import time
 import math
+from torch.utils.tensorboard import SummaryWriter
+import os
+
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 #my imports
 from pddm.regressors.feedforward_network import feedforward_network
+from pddm.regressors.feedforward_network import myDataset
 
 
 class Dyn_Model:
@@ -49,6 +54,7 @@ class Dyn_Model:
         self.torch_datatype = self.params.torch_datatype
 
         self.define_network_ensemble()
+        self.writer = SummaryWriter('logs/torch_convert_run_tf_compare_ant')
 
 
     def define_network_ensemble(self):
@@ -64,7 +70,7 @@ class Dyn_Model:
     def compute_loss(self, this_dataX, data_outputs_batch):
 
         inputs_ = torch.from_numpy(this_dataX)
-        labels_ = torch.from_numpy(data_outputs_batch)
+        labels_ = data_outputs_batch.detach()
 
         first, second = torch.split(inputs_, [(self.inputSize - self.acSize), self.acSize], 3)
         second = torch.clamp(second, -1, 1)
@@ -73,7 +79,7 @@ class Dyn_Model:
         self.mses = []
         self.train_steps = []
 
-        for i in range(self.ensemble_size):
+        for i in range(1):
             self.opt = torch.optim.Adam(self.networks[i].parameters(), lr=self.params.lr)
             self.opt.zero_grad()
             inputState = torch.flatten(self.inputs_clipped[i], start_dim=1)
@@ -83,15 +89,17 @@ class Dyn_Model:
             this_mse = torch.mean(
                 torch.pow(labels_ - curr_output, 2))
 
-
             this_mse.backward()
             self.opt.step()
             self.mses.append(this_mse.item())
+
+            # self.writer.add_graph(self.networks[i], inputState, True)
 
         self.predicted_outputs = self.curr_nn_outputs
         losses = self.mses
         outputs = self.curr_nn_outputs
         true_output = labels_
+        # self.writer.flush()
 
         return losses, outputs, true_output
 
@@ -107,7 +115,7 @@ class Dyn_Model:
         curr_nn_outputs = []
         mses = []
 
-        for i in range(self.ensemble_size):
+        for i in range(1):
             inputState = torch.flatten(inputs_clipped[i], start_dim=1)
             curr_output = self.networks[i].forward(inputState)
             curr_nn_outputs.append(curr_output)
@@ -156,6 +164,9 @@ class Dyn_Model:
         nData_onPol = data_inputs_onPol.shape[0]
         nData = nData_rand + nData_onPol
 
+        dataset = myDataset(data_inputs, data_outputs)
+        dataLoader = torch.utils.data.DataLoader(dataset, batch_size=self.batchsize, shuffle=True)
+
         #training loop
         for i in range(nEpoch):
 
@@ -168,19 +179,14 @@ class Dyn_Model:
             ##############################
 
             #randomly order indices (equivalent to shuffling)
-            range_of_indices = np.arange(data_inputs.shape[0])
-            all_indices = npr.choice(
-                range_of_indices, size=(data_inputs.shape[0],), replace=False)
+            # range_of_indices = np.arange(data_inputs.shape[0])
+            # all_indices = range_of_indices
 
-            for batch in range(int(math.floor(nData / self.batchsize))):
+            for batch_input, batch_output in dataLoader:
 
                 #walk through the shuffled new data
-                data_inputs_batch = data_inputs[
-                    all_indices[batch * self.batchsize:(batch + 1) *
-                                self.batchsize]]  #[bs x K x dim]
-                data_outputs_batch = data_outputs[all_indices[
-                    batch * self.batchsize:(batch + 1) * self.
-                    batchsize]]  #[bs x dim]
+                data_inputs_batch = batch_input  #[bs x K x dim]
+                data_outputs_batch = batch_output  #[bs x dim]
 
                 #one iteration of feedforward training
                 this_dataX = np.tile(data_inputs_batch,
@@ -190,6 +196,9 @@ class Dyn_Model:
 
                 losses, outputs, true_output = self.compute_loss(this_dataX, data_outputs_batch)
 
+                # print(net.state_dict().keys())
+                net = self.networks[0]
+
                 # ---------------------------------------------------------------------------------------------------
 
                 loss = np.mean(losses)
@@ -197,8 +206,35 @@ class Dyn_Model:
                 training_loss_list.append(loss.item())
                 sum_training_loss += loss.item()
                 num_training_batches += 1
+                self.writer.add_scalar('stats/loss', loss, num_training_batches)
+                net = self.networks[0]
+                self.writer.add_histogram('layer_in/weight ', net.network.layer_in.weight, num_training_batches)
+                self.writer.add_histogram('layer_in/bias ', net.network.layer_in.bias, num_training_batches)
+                self.writer.add_histogram('layer_in/wt_grad ', net.network.layer_in.weight.grad, num_training_batches)
+                self.writer.add_histogram('layer_in/bias_grad ', net.network.layer_in.bias.grad, num_training_batches)
+                self.writer.add_histogram('layer_1/weight ', net.network.layer_1.weight, num_training_batches)
+                self.writer.add_histogram('layer_1/bias ', net.network.layer_1.bias, num_training_batches)
+                self.writer.add_histogram('layer_1/wt_grad ', net.network.layer_1.weight.grad, num_training_batches)
+                self.writer.add_histogram('layer_1/bias_grad ', net.network.layer_1.bias.grad, num_training_batches)
+                self.writer.add_histogram('layer_out/weight ', net.network.layer_out.weight, num_training_batches)
+                self.writer.add_histogram('layer_out/bias ', net.network.layer_out.bias, num_training_batches)
+                self.writer.add_histogram('layer_out/wt_grad ', net.network.layer_out.weight.grad, num_training_batches)
+                self.writer.add_histogram('layer_out/bias_grad ', net.network.layer_out.bias.grad, num_training_batches)
+                self.writer.flush()
 
             mean_training_loss = sum_training_loss / num_training_batches
+
+            # self.writer.add_scalar('loss ', mean_training_loss, i)
+            # self.writer.add_histogram('layer_in/weight ', net.network.layer_in.weight, i)
+            # self.writer.add_histogram('layer_in/bias ', net.network.layer_in.bias, i)
+            # self.writer.add_histogram('layer_in/grad ', net.network.layer_in.weight.grad, i)
+            # self.writer.add_histogram('layer_1/weight ', net.network.layer_1.weight, i)
+            # self.writer.add_histogram('layer_1/bias ', net.network.layer_1.bias, i)
+            # self.writer.add_histogram('layer_1/grad ', net.network.layer_1.weight.grad, i)
+            # self.writer.add_histogram('layer_out/weight ', net.network.layer_out.weight, i)
+            # self.writer.add_histogram('layer_out/bias ', net.network.layer_out.bias, i)
+            # self.writer.add_histogram('layer_out/grad ', net.network.layer_out.weight.grad, i)
+            # self.writer.flush()
 
             if ((i % 10 == 0) or (i == (nEpoch - 1))):
 

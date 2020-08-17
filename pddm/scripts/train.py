@@ -312,6 +312,18 @@ def run_job(args, save_dir=None):
                 outputs_val=outputs_val,
                 inputs_val_onPol=inputs_val_onPol,
                 outputs_val_onPol=outputs_val_onPol)
+            # dyn_models.writer.add_scalar('stats/loss', training_loss, counter)
+            # net = dyn_models.networks[0]
+            # dyn_models.writer.add_histogram('layer_in/weight ', net.network.layer_in.weight, counter)
+            # dyn_models.writer.add_histogram('layer_in/bias ', net.network.layer_in.bias, counter)
+            # dyn_models.writer.add_histogram('layer_in/grad ', net.network.layer_in.weight.grad, counter)
+            # dyn_models.writer.add_histogram('layer_1/weight ', net.network.layer_1.weight, counter)
+            # dyn_models.writer.add_histogram('layer_1/bias ', net.network.layer_1.bias, counter)
+            # dyn_models.writer.add_histogram('layer_1/grad ', net.network.layer_1.weight.grad, counter)
+            # dyn_models.writer.add_histogram('layer_out/weight ', net.network.layer_out.weight, counter)
+            # dyn_models.writer.add_histogram('layer_out/bias ', net.network.layer_out.bias, counter)
+            # dyn_models.writer.add_histogram('layer_out/grad ', net.network.layer_out.weight.grad, counter)
+            # dyn_models.writer.flush()
 
         #saving rollout info
         rollouts_info = []
@@ -437,6 +449,8 @@ def run_job(args, save_dir=None):
         # append onto rewards/scores
         rew_perIter.append([np.mean(list_rewards), np.std(list_rewards)])
         scores_perIter.append([np.mean(list_scores), np.std(list_scores)])
+        dyn_models.writer.add_scalar('stats/reward', np.mean(list_rewards), counter)
+        dyn_models.writer.add_scalar('stats/score', np.mean(list_scores), counter)
 
         # save
         saver_data.rollouts_rewardsPerIter = rew_perIter
