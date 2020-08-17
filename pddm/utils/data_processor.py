@@ -183,3 +183,87 @@ class DataProcessor:
             dataZ = np.concatenate([dataZ, dataZ_second])
 
         return Dataset(dataX, dataY, dataZ)
+
+    def convertRolloutsToDistribDatasets(self, rollouts):
+
+        if len(rollouts)==0:
+            return Distrib_DataSet()
+
+        all_states_K = []
+        all_actions_K = []
+        all_rewards_K = []
+        all_done_K = []
+        all_next_states_K= []
+        K = self.params.K
+
+        for rollout in rollouts:
+
+            states = rollout.states
+            actions = rollout.actions
+            rewards = rollout.rewards_per_step
+            done = rollout.done
+            next_states = rollout.next_states
+
+            #the past K timesteps
+            for step in range(K, len(states)):
+                all_states_K.append(states[step - K:step])
+                all_actions_K.append(actions[step - K:step])
+                all_rewards_K.append(rewards[step - K:step])
+                all_done_K.append(done[step - K:step])
+                all_next_states_K.append(next_states[step - K:step])
+                # all_differences_single.append(states[step] - states[step - 1])
+
+        #training labels:
+        # dataZ = np.array(all_differences_single)
+
+        #turn the list of rollouts into large arrays of data
+        all_states_K = self.array_datatype(np.array(all_states_K))
+        all_actions_K = self.array_datatype(np.array(all_actions_K))
+        all_rewards_K = self.array_datatype(np.array(all_rewards_K))
+        all_done_K = self.array_datatype(np.array(all_done_K))
+        all_next_states_K = self.array_datatype(np.array(all_next_states_K))
+
+        #add some supervised learning noise (to help model training)
+        if self.params.make_training_dataset_noisy:
+            all_states_K = add_noise(all_states_K, self.params.noiseToSignal)
+            all_next_states_K = add_noise(all_next_states_K, self.params.noiseToSignal)
+
+        ###############################
+        ### double the data
+        # e.g., for baoding balls
+        # by switching the 2 objects' data
+        # (doesn't matter which ball is where)
+        ###############################
+
+        if (self.duplicateData_switchObjs):
+
+            obj_start1, obj_start2, target_start1, target_start2 = self.indices_for_switching
+
+            all_states_K_second = all_states_K.copy()
+            all_states_K_temp = all_states_K.copy()
+            all_next_states_K_second = all_next_states_K.copy()
+            all_next_states_K_temp = all_next_states_K.copy()
+
+            #switch for dataX
+            all_states_K_second[:, :, obj_start1:obj_start1 + 6] = all_states_K_temp[:, :, obj_start2:obj_start2 + 6]
+            all_states_K_second[:, :, obj_start2:obj_start2 + 6] = all_states_K_temp[:, :, obj_start1:obj_start1 + 6]
+            all_states_K_second[:, :, target_start1:target_start1 + 2] = all_states_K_temp[:, :, target_start2:]
+            all_states_K_second[:, :, target_start2:] = all_states_K_temp[:, :, target_start1:target_start1 + 2]
+
+            #switch for dataZ
+            all_next_states_K_second[:, obj_start1:obj_start1 + 6] = all_next_states_K_temp[:, obj_start2:obj_start2 + 6]
+            all_next_states_K_second[:, obj_start2:obj_start2 + 6] = all_next_states_K_temp[:, obj_start1:obj_start1 + 6]
+            all_next_states_K_second[:, target_start1:target_start1 + 2] = all_next_states_K_temp[:, target_start2:]
+            all_next_states_K_second[:, target_start2:] = all_next_states_K_temp[:, target_start1:target_start1 + 2]
+
+            #concat
+            all_states_K = np.concatenate([all_states_K, all_states_K_second])
+            # dataY = np.concatenate([dataY, dataY])
+            all_next_states_K = np.concatenate([all_next_states_K, all_next_states_K_second])
+
+
+        return Distrib_DataSet(all_states_K,
+                               all_actions_K,
+                               all_done_K,
+                               all_rewards_K,
+                               all_next_states_K)

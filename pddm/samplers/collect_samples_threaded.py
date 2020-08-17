@@ -59,6 +59,8 @@ class CollectSamples(object):
         observations = []
         actions = []
         rewards_per_step = []
+        done = []
+        next_observations = []
 
         #reset env
         observation, starting_state = self.env.reset(return_start_state=True)
@@ -80,6 +82,8 @@ class CollectSamples(object):
             #perform the action
             next_observation, reward, terminal, _ = self.env.step(action)
             rewards_per_step.append(reward)
+            done.append(terminal)
+            next_observations.append(next_observation)
 
             #update the observation
             observation = np.copy(next_observation)
@@ -89,4 +93,5 @@ class CollectSamples(object):
 
         return Rollout(
             np.array(observations), np.array(actions),
-            np.array(rewards_per_step), starting_state)
+            np.array(rewards_per_step), starting_state,
+            np.array(done), np.array(next_observations))

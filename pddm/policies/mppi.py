@@ -24,7 +24,7 @@ from pddm.utils.calculate_costs import calculate_costs
 
 class MPPI(object):
 
-    def __init__(self, env, dyn_models, reward_func, rand_policy, use_ground_truth_dynamics,
+    def __init__(self, env, dyn_models, dist_models, reward_func, rand_policy, use_ground_truth_dynamics,
                  execute_sideRollouts, plot_sideRollouts, params):
 
         ###########
@@ -36,6 +36,7 @@ class MPPI(object):
         self.rand_policy = rand_policy
         self.use_ground_truth_dynamics = use_ground_truth_dynamics
         self.dyn_models = dyn_models
+        self.distrib_models = dist_models
         self.execute_sideRollouts = execute_sideRollouts
         self.plot_sideRollouts = plot_sideRollouts
         self.reward_func = reward_func
@@ -167,7 +168,7 @@ class MPPI(object):
 
         # calculate costs [N,]
         costs, mean_costs, std_costs = calculate_costs(resulting_states_list, all_samples,
-                                self.reward_func, evaluating, take_exploratory_actions)
+                                self.reward_func, evaluating, take_exploratory_actions, self.distrib_models)
 
         # uses all paths to update action mean (for horizon steps)
         # Note: mppi_update needs rewards, so pass in -costs

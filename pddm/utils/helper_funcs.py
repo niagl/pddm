@@ -92,6 +92,16 @@ def concat_datasets(a, b):
 
     return Dataset(x, y, z)
 
+def concat_distrib_datasets(a, b):
+
+    obs = np.concatenate([a.observations, b.observations])
+    actions = np.concatenate([a.actions, b.actions])
+    done = np.concatenate([a.done, b.done])
+    reward = np.concatenate([a.reward, b.reward])
+    next_states = np.concatenate([a.next_states, b.next_states])
+
+    return Distrib_DataSet(obs, actions, done, reward, next_states)
+
 
 def add_noise(data_inp, noiseToSignal):
     """

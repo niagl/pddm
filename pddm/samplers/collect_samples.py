@@ -54,6 +54,9 @@ class CollectSamples(object):
         actions = []
         visualize = False
         rewards_per_step = []
+        done = []
+        next_observations = []
+
         if ((rollout_number % visualization_frequency) == 0):
             print("Currently performing rollout #", rollout_number)
             if (self.visualize_at_all):
@@ -81,6 +84,8 @@ class CollectSamples(object):
             # store things
             rewards_per_step.append(reward)
             observation = np.copy(next_observation)
+            done.append(terminal)
+            next_observations.append(observation)
 
             if terminal:
                 print("Had to stop rollout because terminal state was reached.")
@@ -96,4 +101,5 @@ class CollectSamples(object):
             print("should be: ", self.dt_from_xml*steps_per_rollout)
         return Rollout(
             np.array(observations), np.array(actions),
-            np.array(rewards_per_step), starting_state)
+            np.array(rewards_per_step), starting_state,
+            np.array(done), np.array(next_observations))

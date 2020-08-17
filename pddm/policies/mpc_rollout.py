@@ -27,6 +27,7 @@ class MPCRollout:
     def __init__(self,
                  env,
                  dyn_models,
+                 distrib_models,
                  rand_policy,
                  execute_sideRollouts,
                  plot_sideRollouts,
@@ -36,6 +37,7 @@ class MPCRollout:
         #init vars
         self.env = env
         self.dyn_models = dyn_models
+        self.distrib_models = distrib_models
         self.print_minimal = params.print_minimal
         self.use_ground_truth_dynamics = params.use_ground_truth_dynamics
         self.evaluating = evaluating
@@ -57,7 +59,7 @@ class MPCRollout:
         self.controller_cem = CEM(self.env, self.dyn_models, self.reward_func, rand_policy,
                                   self.use_ground_truth_dynamics,
                                   execute_sideRollouts, plot_sideRollouts, params)
-        self.controller_mppi = MPPI(self.env, self.dyn_models, self.reward_func, rand_policy,
+        self.controller_mppi = MPPI(self.env, self.dyn_models, self.distrib_models, self.reward_func, rand_policy,
                                     self.use_ground_truth_dynamics,
                                     execute_sideRollouts, plot_sideRollouts, params)
 

@@ -64,3 +64,54 @@ def feedforward_network(inputStates, inputSize, outputSize, num_fc_layers,
             trainable=True)
 
     return z
+
+def distrib_network(inputStates, num_fc_layers, output_size,
+                        depth_fc_layers, tf_datatype, scope):
+
+    with tf.variable_scope(str(scope)):
+
+        #concat K entries together [bs x K x sa] --> [bs x ksa]
+        inputState = inputStates
+        outputSize = output_size
+
+        #vars
+        intermediate_size = depth_fc_layers
+        reuse = False
+        initializer = tf.contrib.layers.xavier_initializer(
+            uniform=False, seed=None, dtype=tf_datatype)
+        fc = tf.contrib.layers.fully_connected
+
+        # make hidden layers
+        for i in range(num_fc_layers):
+            if i==0:
+                fc_i = fc(
+                    inputState,
+                    num_outputs=intermediate_size,
+                    activation_fn=None,
+                    weights_initializer=initializer,
+                    biases_initializer=initializer,
+                    reuse=reuse,
+                    trainable=True)
+            else:
+                fc_i = fc(
+                    h_i,
+                    num_outputs=intermediate_size,
+                    activation_fn=None,
+                    weights_initializer=initializer,
+                    biases_initializer=initializer,
+                    reuse=reuse,
+                    trainable=True)
+            h_i = tf.nn.relu(fc_i)
+
+        # make output layer
+        z = fc(
+            h_i,
+            num_outputs=outputSize,
+            activation_fn=None,
+            weights_initializer=initializer,
+            biases_initializer=initializer,
+            reuse=reuse,
+            trainable=True)
+        z_i = tf.nn.softmax(z)
+
+    return z_i

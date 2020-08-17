@@ -13,6 +13,9 @@
 # limitations under the License.
 
 import os
+
+
+
 os.environ["MKL_THREADING_LAYER"] = "GNU"
 import numpy as np
 import numpy.random as npr
@@ -26,6 +29,7 @@ import traceback
 from pddm.policies.policy_random import Policy_Random
 from pddm.utils.helper_funcs import *
 from pddm.regressors.dynamics_model import Dyn_Model
+from pddm.regressors.distrib_model import Distrib_Model
 from pddm.policies.mpc_rollout import MPCRollout
 from pddm.utils.loader import Loader
 from pddm.utils.saver import Saver
@@ -131,6 +135,11 @@ def run_job(args, save_dir=None):
             dataset_valRand = data_processor.convertRolloutsToDatasets(
                 rollouts_valRand)
 
+            distrib_trainDataset_rand = data_processor.convertRolloutsToDistribDatasets(
+                rollouts_trainRand)
+            distrib_valDataset = data_processor.convertRolloutsToDistribDatasets(
+                rollouts_valRand)
+
             #onPol train/val data
             dataset_trainOnPol = Dataset()
             rollouts_trainOnPol = []
@@ -164,6 +173,11 @@ def run_job(args, save_dir=None):
             dataset_valRand = data_processor.convertRolloutsToDatasets(
                 rollouts_valRand)
 
+            distrib_trainDataset_rand = data_processor.convertRolloutsToDistribDatasets(
+                rollouts_trainRand)
+            distrib_valDataset = data_processor.convertRolloutsToDistribDatasets(
+                rollouts_valRand)
+
             #lists for saving
             trainingLoss_perIter = iter_data.training_losses
             rew_perIter = iter_data.rollouts_rewardsPerIter
@@ -187,7 +201,9 @@ def run_job(args, save_dir=None):
 
         dyn_models = Dyn_Model(inputSize, outputSize, acSize, sess, params=args)
 
-        mpc_rollout = MPCRollout(env, dyn_models, random_policy,
+        distrib_models = Distrib_Model(inputSize, outputSize, acSize, sess, num_atoms=51, params=args)
+
+        mpc_rollout = MPCRollout(env, dyn_models, distrib_models, random_policy,
                                  execute_sideRollouts, plot_sideRollouts, args)
 
         ### init TF variables
@@ -222,6 +238,9 @@ def run_job(args, save_dir=None):
                 rollouts_trainOnPol)
             dataset_valOnPol = data_processor.convertRolloutsToDatasets(
                 rollouts_valOnPol)
+
+            distrib_trainDataset_onPol = data_processor.convertRolloutsToDistribDatasets(
+                rollouts_trainOnPol)
 
             # amount of data
             numData_train_onPol = get_num_data(rollouts_trainOnPol)
@@ -322,6 +341,12 @@ def run_job(args, save_dir=None):
                     inputs_val_onPol=inputs_val_onPol,
                     outputs_val_onPol=outputs_val_onPol)
 
+                ## train distrib model with distrib_trainDataset_rand & distrib_trainDataset_onPol
+                training_loss, training_lists_to_save = distrib_models.train(
+                    distrib_trainDataset_rand,
+                    distrib_trainDataset_onPol,
+                    nEpoch_use)
+
             #saving rollout info
             rollouts_info = []
             list_rewards = []
@@ -391,6 +416,9 @@ def run_job(args, save_dir=None):
             #concat this dataset with the existing dataset_trainRand
             dataset_trainRand = concat_datasets(dataset_trainRand,
                                                 dataset_rand_new)
+
+            distrib_trainDataset_rand = concat_distrib_datasets(distrib_trainDataset_rand,
+                                                   dataset_rand_new)
 
             #########################################################
             ### aggregate MPC rollouts into train/val

@@ -55,12 +55,15 @@ class Rollout:
                  observations=np.array([]),
                  actions=np.array([]),
                  rewards_per_step=None,
-                 starting_state=None):
+                 starting_state=None,
+                 done=np.array([]),
+                 next_observations=np.array([])):
         self.states = observations.copy()
         self.actions = actions.copy()
         self.rewards_per_step = rewards_per_step.copy()
         self.starting_state = starting_state
-
+        self.done = done.copy()
+        self.next_states = next_observations.copy()
 
 #######################
 
@@ -74,3 +77,21 @@ class Dataset:
         self.dataX = dataX
         self.dataY = dataY
         self.dataZ = dataZ
+
+
+#######################
+
+class Distrib_DataSet:
+
+    def __init__(self,
+                 observations = np.array([]),
+                 actions = np.array([]),
+                 done = np.array([]),
+                 reward = np.array([]),
+                 next_states = np.array([])):
+        self.observations = observations
+        self.actions = actions
+        self.done = done
+        self.reward = reward
+        self.next_states = next_states
+
