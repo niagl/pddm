@@ -40,10 +40,11 @@ class DataPerIter:
 
         self.normalization_data = MeanStd()
 
-        self.training_losses = []
+        self.pddm_training_losses = []
         self.training_numData = []
         self.rollouts_rewardsPerIter = []
         self.rollouts_scoresPerIter = []
+        self.distrib_training_losses = []
 
 
 #######################

@@ -177,14 +177,15 @@ def run_job(args, save_dir=None):
 
             distrib_trainDataset_rand = data_processor.convertRolloutsToDistribDatasets(
                 rollouts_trainRand)
-            distrib_valDataset = data_processor.convertRolloutsToDistribDatasets(
+            distrib_valDataset_rand = data_processor.convertRolloutsToDistribDatasets(
                 rollouts_valRand)
 
             #lists for saving
-            pddm_trainingLoss_perIter = iter_data.training_losses
+            pddm_trainingLoss_perIter = iter_data.pddm_training_losses
             rew_perIter = iter_data.rollouts_rewardsPerIter
             scores_perIter = iter_data.rollouts_scoresPerIter
             trainingData_perIter = iter_data.training_numData
+            distrib_trainingLoss_perIter = iter_data.distrib_training_losses
 
             #initialize counter
             counter = continue_run
@@ -221,9 +222,12 @@ def run_job(args, save_dir=None):
         ######################
         ## loss plots for tensorboard
 
-        loss_var = tf.Variable(0.0)
-        loss_write_pddm = tf.summary.scalar('loss/pddm', loss_var)
-        loss_write_dist = tf.summary.scalar('loss/dist', loss_var)
+        tensorboard_var = tf.Variable(0.0)
+        loss_write_pddm = tf.summary.scalar('loss/pddm', tensorboard_var)
+        loss_write_dist = tf.summary.scalar('loss/dist', tensorboard_var)
+
+        mean_reward_write = tf.summary.scalar('reward', tensorboard_var)
+        mean_score_write = tf.summary.scalar('score', tensorboard_var)
 
         ##############################################
         ### THE MAIN LOOP
@@ -250,6 +254,8 @@ def run_job(args, save_dir=None):
 
             distrib_trainDataset_onPol = data_processor.convertRolloutsToDistribDatasets(
                 rollouts_trainOnPol)
+            distrib_valDataset_onPol = data_processor.convertRolloutsToDistribDatasets(
+                rollouts_valOnPol)
 
             # amount of data
             numData_train_onPol = get_num_data(rollouts_trainOnPol)
@@ -335,6 +341,13 @@ def run_job(args, save_dir=None):
                     val_loss_list_xaxis = 0,
                     rand_loss_list = 0,
                     onPol_loss_list = 0,)
+                distrib_training_loss = 0
+                distrib_training_lists_to_save = dict(
+                    training_loss_list = 0,
+                    actual_rewards_list = 0,
+                    predicted_val_dist_list = 0,
+                    predicted_reward_list = 0,
+                    m_prob_list = 0,)
             else:
 
                 if (not (args.print_minimal)):
@@ -356,7 +369,7 @@ def run_job(args, save_dir=None):
                     inputs_val_onPol=inputs_val_onPol,
                     outputs_val_onPol=outputs_val_onPol)
 
-                summary = sess.run(loss_write_pddm, {loss_var: pddm_training_loss})
+                summary = sess.run(loss_write_pddm, {tensorboard_var: pddm_training_loss})
                 writer.add_summary(summary, counter)
 
                 if (not (args.print_minimal)):
@@ -372,7 +385,7 @@ def run_job(args, save_dir=None):
                     distrib_trainDataset_onPol,
                     nEpoch_dist)
 
-                summary = sess.run(loss_write_dist, {loss_var: distrib_training_loss})
+                summary = sess.run(loss_write_dist, {tensorboard_var: distrib_training_loss})
                 writer.add_summary(summary, counter)
 
             if counter % dist_target_model_update_freq == 0:
@@ -433,17 +446,16 @@ def run_job(args, save_dir=None):
 
             # add these to tensorboard logs
             if counter % args.log_frequency == 0:
-                reward_var = tf.Variable(0.0)
-                reward_write_env = tf.summary.scalar('reward/env_iter_'+str(counter), reward_var)
-                reward_write_dist = tf.summary.scalar('reward/dist_iter_'+str(counter), reward_var)
+                reward_write_env = tf.summary.scalar('d_reward/env_iter_'+str(counter), tensorboard_var)
+                reward_write_dist = tf.summary.scalar('d_reward/dist_iter_'+str(counter), tensorboard_var)
 
                 reward_dist = distrib_models.get_value_dist(rollouts_info[-1]['observations'][:-1, :],
                                                             rollouts_info[-1]['actions'])
                 for i in range(len(rollouts_info[-1]['rollout_rewardsPerStep'])):
-                    summary = sess.run(reward_write_env, {reward_var: rollouts_info[-1]['rollout_rewardsPerStep'][i]})
+                    summary = sess.run(reward_write_env, {tensorboard_var: rollouts_info[-1]['rollout_rewardsPerStep'][i]})
                     writer.add_summary(summary, i)
 
-                    summary = sess.run(reward_write_dist, {reward_var: reward_dist[i]})
+                    summary = sess.run(reward_write_dist, {tensorboard_var: reward_dist[i]})
                     writer.add_summary(summary, i)
                 writer.flush()
 
@@ -500,11 +512,14 @@ def run_job(args, save_dir=None):
             trainingData_perIter.append(numData_train_rand +
                                         numData_train_onPol)
             pddm_trainingLoss_perIter.append(pddm_training_loss)
+            distrib_trainingLoss_perIter.append(distrib_training_loss)
 
             ### stage relevant info for saving
             saver_data.training_numData = trainingData_perIter
-            saver_data.training_losses = pddm_trainingLoss_perIter
-            saver_data.training_lists_to_save = pddm_training_lists_to_save
+            saver_data.pddm_training_losses = pddm_trainingLoss_perIter
+            saver_data.pddm_training_lists_to_save = pddm_training_lists_to_save
+            saver_data.distrib_training_losses = distrib_trainingLoss_perIter
+            saver_data.distrib_training_lists_to_save = distrib_training_lists_to_save
             # Note: the on-policy rollouts include curr iter's rollouts
             # (so next iter can be directly trained on these)
             saver_data.train_rollouts_onPol = rollouts_trainOnPol
@@ -523,6 +538,10 @@ def run_job(args, save_dir=None):
             # append onto rewards/scores
             rew_perIter.append([np.mean(list_rewards), np.std(list_rewards)])
             scores_perIter.append([np.mean(list_scores), np.std(list_scores)])
+            summary = sess.run(mean_reward_write, {tensorboard_var: np.mean(list_rewards)})
+            writer.add_summary(summary, counter)
+            summary = sess.run(mean_score_write, {tensorboard_var: np.mean(list_scores)})
+            writer.add_summary(summary, counter)
 
             # save
             saver_data.rollouts_rewardsPerIter = rew_perIter

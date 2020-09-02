@@ -104,23 +104,36 @@ class Saver:
 
         #losses and sample complexity
         np.save(self.save_dir + '/losses/list_training_loss.npy',
-                save_data.training_losses)
+                save_data.pddm_training_losses)
+        np.save(self.save_dir + '/losses/distrib_list_training_loss.npy',
+                save_data.distrib_training_losses)
         np.save(self.save_dir + '/datapoints_per_agg.npy',
                 save_data.training_numData)
 
         #train/val losses from model training
         np.save(self.save_dir + '/losses/training_losses_iter' + str(self.iter_num)
-                + '.npy', save_data.training_lists_to_save['training_loss_list'])
+                + '.npy', save_data.pddm_training_lists_to_save['training_loss_list'])
         np.save(self.save_dir + '/losses/validation_losses_iter' + str(self.iter_num)
-                + '.npy', save_data.training_lists_to_save['val_loss_list_rand'])
+                + '.npy', save_data.pddm_training_lists_to_save['val_loss_list_rand'])
         np.save(self.save_dir + '/losses/validation_losses_xaxis_iter' + str(self.iter_num)
-                + '.npy', save_data.training_lists_to_save['val_loss_list_xaxis'])
+                + '.npy', save_data.pddm_training_lists_to_save['val_loss_list_xaxis'])
         np.save(self.save_dir + '/losses/validation_onPol_losses_iter' + str(self.iter_num)
-                + '.npy', save_data.training_lists_to_save['val_loss_list_onPol'])
+                + '.npy', save_data.pddm_training_lists_to_save['val_loss_list_onPol'])
         np.save(self.save_dir + '/losses/old_losses_iter' + str(self.iter_num)
-                + '.npy', save_data.training_lists_to_save['rand_loss_list'])
+                + '.npy', save_data.pddm_training_lists_to_save['rand_loss_list'])
         np.save(self.save_dir + '/losses/new_losses_iter' + str(self.iter_num)
-                + '.npy', save_data.training_lists_to_save['onPol_loss_list'])
+                + '.npy', save_data.pddm_training_lists_to_save['onPol_loss_list'])
+
+        np.save(self.save_dir + '/losses/distrib_training_losses_iter' + str(self.iter_num)
+                + '.npy', save_data.distrib_training_lists_to_save['training_loss_list'])
+        np.save(self.save_dir + '/losses/distrib_actual_rewards_iter' + str(self.iter_num)
+                + '.npy', save_data.distrib_training_lists_to_save['actual_rewards_list'])
+        np.save(self.save_dir + '/losses/distrib_predicted_val_dist_iter' + str(self.iter_num)
+                + '.npy', save_data.distrib_training_lists_to_save['predicted_val_dist_list'])
+        np.save(self.save_dir + '/losses/distrib_predicted_reward_iter' + str(self.iter_num)
+                + '.npy', save_data.distrib_training_lists_to_save['predicted_reward_list'])
+        np.save(self.save_dir + '/losses/distib_m_prob_iter' + str(self.iter_num)
+                + '.npy', save_data.distrib_training_lists_to_save['m_prob_list'])
 
     def save_rollout_info(self, save_data):
 

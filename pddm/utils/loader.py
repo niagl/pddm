@@ -59,9 +59,12 @@ class Loader:
                 str(iter_num) + '.pickle', 'rb'))
 
         #losses/rewards/scores/sample complexity (from all iterations thus far)
-        data_iteration.training_losses = np.load(
+        data_iteration.pddm_training_losses = np.load(
             self.save_dir +
             '/losses/list_training_loss.npy').tolist()[:iter_num]
+        data_iteration.distrib_training_losses = np.load(
+            self.save_dir +
+            '/losses/distrib_list_training_loss.npy').tolist()[:iter_num]
         data_iteration.training_numData = np.load(
             self.save_dir + '/datapoints_per_agg.npy').tolist()[:iter_num]
         data_iteration.rollouts_rewardsPerIter = np.load(
