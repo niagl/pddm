@@ -11,7 +11,7 @@ Combined 2 Papers PDDM and C-51(distrib algo) to learn risk-free actions in comp
 **A Distributional Perspective on Reinforcement Learning**<br/>
 Marc G. Bellemare, Will Dabney, Rémi Munos
 
-Please note that this is research code, and as such, is still under construction. This code implements the model-based RL algorithm presented in PDDM. Please contact Anusha Nagabandi for questions or concerns. <br/><br/>
+Please note that this is research code, and as such, is still under construction. This code implements the model-based RL algorithm presented in PDDM and combines it with distributional rewards from C-51. <br/><br/>
 
 **Contents of this README:**
 - [A. Getting Started](#a-getting-started)

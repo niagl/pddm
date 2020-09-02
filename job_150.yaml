@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  generateName: pddm-tf-itr-ant-
+  labels:
+    type: interactive
+    research-group: rl-team
+spec:
+  hostIPC: true
+  restartPolicy: Never
+  containers:
+  - name: pddm-run
+    tty: true
+    stdin: true
+    workingDir: /workspace/home/data/pddm_tf_copy/
+    #command: ["python3", "./pddm/scripts/train.py", "--config", " ./pddm/config/baoding.txt",
+    #          "--output_dir", "./results/pddm_tf_30Jun_baoding"]
+    command: ["sleep", "infinity"]
+    image: amr-registry.caas.intel.com/aipg/nikhila1-ub18_mujoco150_base:v2
+    resources:
+      limits:
+        nvidia.com/gpu: 0 # requesting 3 GPU
+        cpu: 20
+        memory: 32Gi
+      requests: # Minimum resources needed (if omitted, then limits is used)
+        cpu: 10 # 16 CPU cores
+        memory: 32Gi # 32 GB RAM
+
+    volumeMounts:
+    - mountPath: "/workspace"
+      name: workspace
+    envFrom:
+    - configMapRef:
+        name: proxy-config
+    env:
+    - name: LD_LIBRARY_PATH
+      value: $LD_LIBRARY_PATH:/home/nikhila1/.mujoco/mjpro150/bin
+    - name: PYTHONPATH
+      value: $PYTHONPATH:/workspace/home/data/pddm_tf_copy
+  securityContext:
+    fsGroup: 17685
+    runAsUser: 11960590
+  volumes:
+  - name: workspace
+    persistentVolumeClaim:
+      claimName: workdisk
