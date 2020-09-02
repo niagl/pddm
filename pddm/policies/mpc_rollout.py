@@ -113,6 +113,7 @@ class MPCRollout:
         actions_taken = []
         actions_taken_K = []
         rewards = []
+        dones = []
         scores = []
         env_infos = []
         list_mpe_1step = []
@@ -137,7 +138,7 @@ class MPCRollout:
         for z in range(self.K - 1):
 
             # take step of action 0
-            curr_state, rew, _, env_info = self.env.step(zero_ac)
+            curr_state, rew, done_, env_info = self.env.step(zero_ac)
             step += 1
 
             actions_taken.append(zero_ac)
@@ -145,6 +146,7 @@ class MPCRollout:
 
             #save info
             rewards.append(rew)
+            dones.append(done_)
             scores.append(env_info['score'])
             env_infos.append(env_info)
             total_reward_for_episode += rew
@@ -235,6 +237,7 @@ class MPCRollout:
 
             #save things
             rewards.append(rew)
+            dones.append(done)
             scores.append(env_info['score'])
             env_infos.append(env_info)
             actions_taken.append(action_to_document)
@@ -277,6 +280,8 @@ class MPCRollout:
 
             rollout_rewardsPerStep=np.array(rewards),
             rollout_rewardTotal=total_reward_for_episode,
+
+            rollout_done=np.array(dones),
 
             rollout_scoresPerStep=np.array(scores),
             rollout_meanScore=np.mean(scores),

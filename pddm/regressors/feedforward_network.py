@@ -65,14 +65,10 @@ def feedforward_network(inputStates, inputSize, outputSize, num_fc_layers,
 
     return z
 
-def distrib_network(inputStates, num_fc_layers, output_size,
+def distrib_network(inputState, num_fc_layers, outputSize,
                         depth_fc_layers, tf_datatype, scope):
 
     with tf.variable_scope(str(scope)):
-
-        #concat K entries together [bs x K x sa] --> [bs x ksa]
-        inputState = inputStates
-        outputSize = output_size
 
         #vars
         intermediate_size = depth_fc_layers
@@ -112,6 +108,7 @@ def distrib_network(inputStates, num_fc_layers, output_size,
             biases_initializer=initializer,
             reuse=reuse,
             trainable=True)
-        z_i = tf.nn.softmax(z)
 
-    return z_i
+        z_o = tf.nn.softmax(z)
+
+    return z_o

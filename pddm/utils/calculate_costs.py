@@ -15,11 +15,10 @@
 import numpy as np
 
 def cost_per_step(pt, prev_pt, costs, actions, dones, reward_func, dist_models):
-    # step_rews, step_dones = reward_func(pt, actions)
+    _, step_dones = reward_func(pt, actions)
     step_rews = dist_models.get_value_dist(pt, actions)
 
-    # dones = np.logical_or(dones, step_dones)
-    dones = np.logical_or(dones)
+    dones = np.logical_or(dones, step_dones)
     costs[dones > 0] += 500
     costs[dones == 0] -= step_rews[dones == 0]
 
@@ -49,8 +48,6 @@ def calculate_costs(resulting_states_list, actions, reward_func,
     Returns:
         cost_for_ranking : cost associated with each candidate action sequence [N,]
     """
-
-    dist_models
 
     ensemble_size = len(resulting_states_list)
     tiled_actions = np.tile(actions, (ensemble_size, 1, 1))

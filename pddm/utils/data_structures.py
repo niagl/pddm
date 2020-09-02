@@ -93,5 +93,4 @@ class Distrib_DataSet:
         self.actions = actions
         self.done = done
         self.reward = reward
-        self.next_states = next_states
 

@@ -80,7 +80,7 @@ class Dyn_Model:
     def define_forward_pass(self):
 
         #optimizer
-        self.opt = tf.train.AdamOptimizer(self.params.lr)
+        self.opt = tf.train.AdamOptimizer(self.params.dyn_lr)
 
         self.curr_nn_outputs = []
         self.mses = []
@@ -91,7 +91,7 @@ class Dyn_Model:
             # forward pass through this network
             this_output = feedforward_network(
                 self.inputs_clipped[i], self.inputSize, self.outputSize,
-                self.params.num_fc_layers, self.params.depth_fc_layers, self.tf_datatype, scope=i)
+                self.params.dyn_num_fc_layers, self.params.dyn_depth_fc_layers, self.tf_datatype, scope=str(i))
             self.curr_nn_outputs.append(this_output)
 
             # loss of this network's predictions
@@ -145,6 +145,8 @@ class Dyn_Model:
         nData_rand = data_inputs_rand.shape[0]
         nData_onPol = data_inputs_onPol.shape[0]
         nData = nData_rand + nData_onPol
+
+        print('    Total number of data points training for: ', data_inputs.shape[0])
 
         #training loop
         for i in range(nEpoch):

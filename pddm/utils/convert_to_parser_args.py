@@ -38,6 +38,7 @@ def convert_to_parser_args(args_source=sys.argv[1:]):
 
     # other T/F
     parser.add_argument('--visualize_MPC_rollout', action="store_true")
+    parser.add_argument('--log_frequency', type=int, default=10)
     parser.add_argument('--print_minimal', action="store_true")
 
     # noise options
@@ -68,8 +69,8 @@ def convert_to_parser_args(args_source=sys.argv[1:]):
     #######################
 
     # arch
-    parser.add_argument('--num_fc_layers', type=int, default=2)
-    parser.add_argument('--depth_fc_layers', type=int, default=64)
+    parser.add_argument('--dyn_num_fc_layers', type=int, default=2)
+    parser.add_argument('--dyn_depth_fc_layers', type=int, default=64)
     parser.add_argument('--ensemble_size', type=int, default=1) #ensemble size
     parser.add_argument('--K', type=int, default=1) #number of past states for input to model
 
@@ -79,8 +80,8 @@ def convert_to_parser_args(args_source=sys.argv[1:]):
     # model training
     parser.add_argument('--always_use_savedModel', action="store_true") #use saved model instead of training one
     parser.add_argument('--batchsize', type=int, default=500) #batchsize for each gradient step
-    parser.add_argument('--lr', type=float, default=0.001) #learning rate
-    parser.add_argument('--nEpoch', type=int, default=40) #epochs of training
+    parser.add_argument('--dyn_lr', type=float, default=0.001) #learning rate
+    parser.add_argument('--dyn_nEpoch', type=int, default=40) #epochs of training
     parser.add_argument('--nEpoch_init', type=int, default=40) #epochs of training for 1st iter
 
     #######################
@@ -100,6 +101,24 @@ def convert_to_parser_args(args_source=sys.argv[1:]):
     parser.add_argument('--mppi_kappa', type=float, default=1.0) #reward weighting
     parser.add_argument('--mppi_mag_noise', type=float, default=0.9) #magnitude of sampled noise
     parser.add_argument('--mppi_beta', type=float, default=0.8) #smoothing
+
+    #######################
+    ### distrib model
+    #######################
+
+    # arch
+    parser.add_argument('--dist_num_fc_layers', type=int, default=2)
+    parser.add_argument('--dist_depth_fc_layers', type=int, default=64)
+
+    parser.add_argument('--dist_lr', type=float, default=0.001)  # learning rate
+    parser.add_argument('--dist_nEpoch', type=int, default=40)  # epochs of training
+    parser.add_argument('--dist_target_model_update_freq', type=int, default=1)  # update every iter
+    parser.add_argument('--dist_target_model_update_tau', type=float, default=0.8)  # update every iter
+
+    parser.add_argument('--atoms', type=int, default=51) # no. of atoms/buckets for C-51_
+    parser.add_argument('--use_given_Vmax_Vmin', action="store_true")
+    parser.add_argument('--Vmax', type=int, default=30)
+    parser.add_argument('--Vmin', type=int, default=-10)
 
     args = parser.parse_args(args_source)
     return args
