@@ -109,7 +109,7 @@
 
 ## model training
 'dist_lr': [0.001],
-'dist_nEpoch': [20],
+'dist_nEpoch': [50],
 'dist_target_model_update_freq': [1],
 'dist_target_model_update_tau': [0.9],
 
