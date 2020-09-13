@@ -238,13 +238,16 @@ class DataProcessor:
             all_states_K_temp = all_states_K.copy()
 
             #switch for dataX
-            all_states_K_second[:, :, obj_start1:obj_start1 + 6] = all_states_K_temp[:, :, obj_start2:obj_start2 + 6]
-            all_states_K_second[:, :, obj_start2:obj_start2 + 6] = all_states_K_temp[:, :, obj_start1:obj_start1 + 6]
-            all_states_K_second[:, :, target_start1:target_start1 + 2] = all_states_K_temp[:, :, target_start2:]
-            all_states_K_second[:, :, target_start2:] = all_states_K_temp[:, :, target_start1:target_start1 + 2]
+            all_states_K_second[:, obj_start1:obj_start1 + 6] = all_states_K_temp[:, obj_start2:obj_start2 + 6]
+            all_states_K_second[:, obj_start2:obj_start2 + 6] = all_states_K_temp[:, obj_start1:obj_start1 + 6]
+            all_states_K_second[:, target_start1:target_start1 + 2] = all_states_K_temp[:, target_start2:]
+            all_states_K_second[:, target_start2:] = all_states_K_temp[:, target_start1:target_start1 + 2]
 
             #concat
             all_states_K = np.concatenate([all_states_K, all_states_K_second])
+            all_actions_K = np.concatenate([all_actions_K, all_actions_K])
+            all_done_K = np.concatenate([all_done_K, all_done_K])
+            all_rewards_K = np.concatenate([all_rewards_K, all_rewards_K])
 
         return Distrib_DataSet(all_states_K,
                                all_actions_K,

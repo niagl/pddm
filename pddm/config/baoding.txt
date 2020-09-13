@@ -39,6 +39,7 @@
 'use_ground_truth_dynamics': [False],
 'visualize_MPC_rollout': [False],
 'print_minimal': [False],
+'log_frequency': 10,
 
 ## noise
 'make_aggregated_dataset_noisy': [True],
@@ -68,8 +69,8 @@
 ##########################
 
 ## arch
-'num_fc_layers': [2],
-'depth_fc_layers': [500],
+'dyn_num_fc_layers': [2],
+'dyn_depth_fc_layers': [500],
 'ensemble_size': [3],
 'K': [1],
 
@@ -77,8 +78,8 @@
 'warmstart_training': [False],
 'always_use_savedModel': [False],
 'batchsize': [512],
-'lr': [0.001],
-'nEpoch': [40],
+'dyn_lr': [0.001],
+'dyn_nEpoch': [40],
 'nEpoch_init': [40],
 
 ##########################
@@ -99,4 +100,21 @@
 'mppi_mag_noise': [0.9],
 'mppi_beta': [0.7],
 
+##########################
+##### distrib model
+##########################
+## arch
+'dist_num_fc_layers': [2],
+'dist_depth_fc_layers': [500],
+
+## model training
+'dist_lr': [0.001],
+'dist_nEpoch': [40],
+'dist_target_model_update_freq': [1],
+'dist_target_model_update_tau': [0.9],
+
+'atoms': [51],
+'use_given_Vmax_Vmin': [False],
+'Vmax': [30],
+'Vmin': [-10],
 }

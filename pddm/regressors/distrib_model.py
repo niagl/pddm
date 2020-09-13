@@ -227,8 +227,8 @@ class Distrib_Model:
                 num_samples = model_inputs_batch.shape[0]
 
                 if not self.use_given_Vmax_Vmin:
-                    self.v_max = np.max(rewards_batch) * 1.2
-                    self.v_min = np.min(rewards_batch) * 1.2
+                    self.v_max = np.max(rewards_batch)
+                    self.v_min = np.min(rewards_batch)
                     self.delta_z = (self.v_max - self.v_min) / float(self.num_atoms - 1)
                     self.z = [self.v_min + i * self.delta_z for i in range(self.num_atoms)]
 
@@ -244,9 +244,10 @@ class Distrib_Model:
                         for j in range(self.num_atoms):
                             Tz = min(self.v_max, max(self.v_min, rewards_batch[i] + self.gamma * predicted_output[i][j]))
                             bj = (Tz - self.v_min) / self.delta_z
-                            l, u = math.floor(bj), math.ceil(bj)
+                            l, u = math.floor(bj), min(math.ceil(bj), self.num_atoms-1)
                             m_prob[i][int(l)] += target_output[i][j] * (u - bj)
                             m_prob[i][int(u)] += target_output[i][j] * (bj - l)
+
                 # print('Done calculating M_prob for all samples')
                 # one iteration of gradient calculation and update
 
