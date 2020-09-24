@@ -17,10 +17,13 @@ import numpy.random as npr
 import tensorflow as tf
 import time
 import math
+import ray
 
 #my imports
 from pddm.regressors.feedforward_network import distrib_network
 from pddm.utils.helper_funcs import concat_distrib_datasets
+from pddm.utils.calculate_prob import calculate_m_prob
+
 
 class Distrib_Model:
     """
@@ -56,6 +59,7 @@ class Distrib_Model:
         self.v_min = self.params.Vmin  # Min possible score
         self.delta_z = (self.v_max - self.v_min) / float(self.num_atoms - 1)
         self.z = [self.v_min + i * self.delta_z for i in range(self.num_atoms)]
+        self.num_proc = 8
 
         ## create placeholders
         self.create_placeholders()
@@ -67,7 +71,7 @@ class Distrib_Model:
 
         ## define forward pass
         self.define_forward_pass()
-
+        ray.init(num_cpus=self.num_proc)
 
     def create_placeholders(self):
         self.inputs_ = tf.placeholder(
@@ -97,7 +101,6 @@ class Distrib_Model:
         self.predicted_output = this_output
         self.target_output = target_output
 
-        # loss = tf.nn.softmax_cross_entropy_with_logits_v2(labels=self.m_prob_, logits=this_output)
         m_prob = self.m_prob_
         m_prob = tf.stop_gradient(m_prob)
         loss = tf.keras.losses.categorical_crossentropy(m_prob, this_output)
@@ -117,8 +120,6 @@ class Distrib_Model:
 
         soft_updates = []
         for var, target_var in zip(model_vars, target_vars):
-            # print('  {} <- {}'.format(target_var.name, var.name))
-            # soft_updates.append(tf.assign(target_var, var))
             soft_updates.append(tf.assign(target_var, (1. - self.tau) * target_var + self.tau * var))
 
         self.update_op = tf.group(*soft_updates)
@@ -133,9 +134,8 @@ class Distrib_Model:
             feed_dict={
                 self.inputs_:  np.concatenate((np.array(state), np.array(action)), axis=1)
             })
-        #(512,29)
-        val_dist_ = np.sum(np.multiply(val_dist[0], np.array(self.z)), axis = 1)
 
+        val_dist_ = np.sum(np.multiply(val_dist[0], np.array(self.z)), axis = 1)
         return val_dist_
 
     def update_target_model(self):
@@ -154,7 +154,6 @@ class Distrib_Model:
               ):
 
         ## currently doing only one epoch of training
-
         np.random.seed()
         start = time.time()
         training_loss_list = []
@@ -199,8 +198,7 @@ class Distrib_Model:
                 range_of_indices, size=(model_input.shape[0],), replace=False)
 
             for batch in range(int(math.floor(nData / self.batch_size))):
-                batch_start = time.time()
-                # print('Starting train for.. Batch number: ', batch, ' Epoch Number: ',epoch_iter)
+                # batch_start = time.time()
                 # walk through the shuffled new data
                 model_inputs_batch = model_input[
                     all_indices[batch * self.batch_size:(batch + 1) *
@@ -212,8 +210,6 @@ class Distrib_Model:
                 done_batch = done[all_indices[
                                              batch * self.batch_size:(batch + 1) * self.
                                                  batch_size]]  # [bs x dim]
-
-                m_prob = np.zeros([model_inputs_batch.shape[0], 51])
 
                 # one iteration of feedforward training
                 predicted_output, target_output = self.sess.run(
@@ -232,25 +228,29 @@ class Distrib_Model:
                     self.delta_z = (self.v_max - self.v_min) / float(self.num_atoms - 1)
                     self.z = [self.v_min + i * self.delta_z for i in range(self.num_atoms)]
 
-                for i in range(num_samples):
-                    if done_batch[i]:  # Terminal State
-                        # Distribution collapses to a single point
-                        Tz = min(self.v_max, max(self.v_min, rewards_batch[i]))
-                        bj = (Tz - self.v_min) / self.delta_z
-                        l, u = math.floor(bj), math.ceil(bj)
-                        m_prob[i][int(l)] += (u - bj)
-                        m_prob[i][int(u)] += (bj - l)
-                    else:
-                        for j in range(self.num_atoms):
-                            Tz = min(self.v_max, max(self.v_min, rewards_batch[i] + self.gamma * predicted_output[i][j]))
-                            bj = (Tz - self.v_min) / self.delta_z
-                            l, u = math.floor(bj), min(math.ceil(bj), self.num_atoms-1)
-                            m_prob[i][int(l)] += target_output[i][j] * (u - bj)
-                            m_prob[i][int(u)] += target_output[i][j] * (bj - l)
+                env_dict = dict()
+                env_dict['v_max'] = self.v_max
+                env_dict['v_min'] = self.v_min
+                env_dict['num_atoms'] = self.num_atoms
+                env_dict['delta_z'] = self.delta_z
+                env_dict['gamma'] = self.gamma
 
-                # print('Done calculating M_prob for all samples')
+                batch_length = int(num_samples / self.num_proc)
+                index_ = [batch_length * x for x in range(self.num_proc)]
+                index_.append(num_samples)
+
+                done_id = ray.put(done_batch)
+                rewards_id = ray.put(rewards_batch)
+                pred_output_id = ray.put(predicted_output)
+                target_output_id = ray.put(target_output)
+                env_dict_id = ray.put(env_dict)
+
+                results_ = [calculate_m_prob.remote(done_id, rewards_id, pred_output_id, target_output_id, index_[x],
+                                                   index_[x + 1], env_dict_id) for x in range(self.num_proc)]
+
+                m_prob = np.concatenate(ray.get(results_), axis=0)
+
                 # one iteration of gradient calculation and update
-
                 _, losses = self.sess.run(
                     [
                         self.train_steps, self.loss
@@ -259,7 +259,7 @@ class Distrib_Model:
                         self.inputs_: model_inputs_batch,
                         self.m_prob_: m_prob
                     })
-                # print('Done calculating loss and gradients for all samples')
+
                 loss = np.mean(losses)
 
                 training_loss_list.append(loss)
@@ -270,7 +270,7 @@ class Distrib_Model:
 
             mean_training_loss = sum_training_loss / num_training_batches
 
-            if ((epoch_iter % 10 == 0) or (i == (nEpoch - 1))):
+            if ((epoch_iter % 10 == 0) or (epoch_iter == (nEpoch - 1))):
                 actual_rewards_list.append(rewards_batch)
                 predicted_val_dist_list.append(predicted_output)
                 predicted_reward = np.sum(np.multiply(predicted_output, np.array(self.z)), axis=1)
@@ -278,7 +278,7 @@ class Distrib_Model:
                 m_prob_list.append(m_prob)
 
             if not self.print_minimal:
-                if ((epoch_iter % 10) == 0 or (i == (nEpoch - 1))):
+                if ((epoch_iter % 10) == 0 or (epoch_iter == (nEpoch - 1))):
                     print("\n=== Epoch {} ===".format(epoch_iter))
                     print("    train loss: ", mean_training_loss)
                     # print("Time taken this Epoch: {:0.2f} s".format(time.time() - epoch_start))

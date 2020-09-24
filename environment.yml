@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: pddm-env
+name: pddm_tf
 channels:
 - pytorch
 - defaults
@@ -34,3 +34,4 @@ dependencies:
   - wheel==0.30.0
   - scipy==1.0.0
   - tensorflow==1.12.0
+  - ray
