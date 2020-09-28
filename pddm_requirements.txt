@@ -6,3 +6,4 @@ tensorflow==1.12.0
 torch==1.5.1+cpu
 torchvision==0.6.1
 gym==0.10.11
+ray
