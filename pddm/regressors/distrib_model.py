@@ -59,7 +59,7 @@ class Distrib_Model:
         self.v_min = self.params.Vmin  # Min possible score
         self.delta_z = (self.v_max - self.v_min) / float(self.num_atoms - 1)
         self.z = [self.v_min + i * self.delta_z for i in range(self.num_atoms)]
-        self.num_proc = 8
+        self.num_proc = 64
 
         ## create placeholders
         self.create_placeholders()
