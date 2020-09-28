@@ -7,3 +7,5 @@ Implementation of the below paper
 **A Distributional Perspective on Reinforcement Learning**<br/>
 Marc G. Bellemare, Will Dabney, Rémi Munos
 
+Tested on tensorflow v2.3.0
+            Gym v0.17.2
