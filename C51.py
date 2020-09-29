@@ -2,6 +2,7 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Input, Dense, Reshape, Softmax
 from tensorflow.keras.optimizers import Adam
+from scipy.signal import find_peaks
 
 import gym
 import argparse
@@ -9,13 +10,14 @@ import numpy as np
 from collections import deque
 import random
 import math
+import matplotlib.pyplot as plt
 
 tf.keras.backend.set_floatx('float64')
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--gamma', type=float, default=0.99)
 parser.add_argument('--lr', type=float, default=0.0001)
-parser.add_argument('--batch_size', type=int, default=8)
+parser.add_argument('--batch_size', type=int, default=1)
 parser.add_argument('--atoms', type=int, default=51)
 parser.add_argument('--v_min', type=float, default=-5.)
 parser.add_argument('--v_max', type=float, default=5.)
@@ -62,6 +64,12 @@ class ActionValueModel:
             outputs.append(Dense(self.atoms, activation='softmax')(h2))
         return tf.keras.Model(input_state, outputs)
 
+    def save_model(self, save_path):
+        self.model.save(save_path)
+
+    def load_model(self, load_path):
+        self.model = tf.keras.models.load_model(load_path)
+
     def train(self, x, y):
 
         y = tf.stop_gradient(y)
@@ -87,6 +95,12 @@ class ActionValueModel:
         z = self.model.predict(state)
         z_concat = np.vstack(z)
         q = np.sum(np.multiply(z_concat, np.array(self.z)), axis=1)
+        if np.argmax(q) == 0:
+            selected = True
+        else:
+            selected = False
+        plot_histogram(z[0], 51, self.z, 'one', selected, q[0])
+        plot_histogram(z[1], 51, self.z, 'two', not(selected), q[1])
         return np.argmax(q)
 
 
@@ -126,7 +140,7 @@ class Agent:
             tf.summary.histogram('Z_1', data=z_[0][i], step=self.step+i, buckets=51)
             tf.summary.histogram('Z_2', data=z_[1][i], step=self.step+i, buckets=51)
             self.step += z[0].shape[0]
-        print('writing....')
+        # print('writing....')
         self.file_writer.flush()
         # z_concat = np.vstack(z)
         # q = np.sum(np.multiply(z_concat, np.array(self.z)), axis=1)
@@ -152,6 +166,8 @@ class Agent:
                         l)] += z_[next_actions[i]][i][j] * (u - bj)
                     m_prob[actions[i]][i][int(
                         u)] += z_[next_actions[i]][i][j] * (bj - l)
+            # plot_histogram1(z[i], 51, self.z, 'one', m_prob, q[0])
+            # plot_histogram(z[1], 51, self.z, 'two', not (selected), q[1])
         loss = self.q.train(states, m_prob)
         tf.summary.scalar('loss', loss, steps)
 
@@ -161,24 +177,55 @@ class Agent:
             state = self.env.reset()
             while not done:
                 action = self.q.get_action(state, ep)
+                self.env.render()
                 next_state, reward, done, _ = self.env.step(action)
                 self.buffer.put(state, action, -
                                 1 if done else 0, next_state, done)
+                self.replay(steps)
 
                 if self.buffer.size() > 1000:
-                    self.replay(steps)
+                    # self.replay(steps)
+                    pass
                 if steps % 5 == 0:
-                    self.target_update()
+                    # self.target_update()
+                    pass
 
                 state = next_state
                 total_reward += reward
                 steps += 1
             print('EP{} reward={}'.format(ep, total_reward))
+            # if ep%100 == 0:
+            #     self.q.save_model('runs/'+str(ep)+'/val_model')
+            #     self.q_target.save_model('runs/'+str(ep)+'/target_model')
+        # self.q.save_model('runs/'+str(max_epsiodes)+'/val_model')
+        # self.q_target.save_model('runs/'+str(max_epsiodes)+'/target_model')
 
+    def load_model(self):
+        self.q.load_model('runs/500'+'/val_model')
+        self.q_target.load_model('runs/500'+'/target_model')
+
+
+def plot_histogram(x, bins, delta_z, action_number, selected, action_value):
+    if find_peaks(x.flatten(), distance=3):
+        pass
+    if find_peaks(np.multiply(x.flatten(),delta_z), distance=3):
+        pass
+    fig, axs = plt.subplots(1, 3, sharey=False, tight_layout=True)
+    axs[1].hist(x.flatten(), bins=bins)
+    axs[1].set_title('neural net output histogram')
+    axs[0].bar(np.arange(51), x.flatten())
+    axs[0].set_title('raw neural net output values (1 - 51)')
+    axs[2].bar(delta_z, np.multiply(x.flatten(),delta_z))
+    axs[2].set_title('values after projection')
+    if selected:
+        fig.suptitle('values for action number '+str(action_number)+': '+str(action_value), fontweight='bold')
+    else:
+        fig.suptitle('values for action number ' + str(action_number)+': '+str(action_value))
 
 def main():
     env = gym.make('CartPole-v1')
     agent = Agent(env)
+    agent.load_model()
     agent.train()
 
     # tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir='runs' + "/metrics", histogram_freq=1)
