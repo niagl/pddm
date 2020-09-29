@@ -128,10 +128,11 @@ class Agent:
             self.step += z[0].shape[0]
         print('writing....')
         self.file_writer.flush()
-        z_concat = np.vstack(z)
-        q = np.sum(np.multiply(z_concat, np.array(self.z)), axis=1)
-        q = q.reshape((self.batch_size, self.action_dim), order='F')
-        next_actions = np.argmax(q, axis=1)
+        # z_concat = np.vstack(z)
+        # q = np.sum(np.multiply(z_concat, np.array(self.z)), axis=1)
+        next_actions = np.argmax(np.sum(np.multiply(z, np.array(self.z)), axis=2), axis=0)
+        # q = q.reshape((self.batch_size, self.action_dim), order='F')
+        # next_actions = np.argmax(q, axis=1)
         m_prob = [np.zeros((self.batch_size, self.atoms))
                   for _ in range(self.action_dim)]
         for i in range(self.batch_size):
@@ -144,7 +145,7 @@ class Agent:
             else:
                 for j in range(self.atoms):
                     Tz = min(self.v_max, max(
-                        self.v_min, rewards[i] + self.gamma * self.z[j]))
+                        self.v_min, rewards[i] + self.gamma * z[next_actions[i]][i][j]))
                     bj = (Tz - self.v_min) / self.delta_z
                     l, u = math.floor(bj), math.ceil(bj)
                     m_prob[actions[i]][i][int(
