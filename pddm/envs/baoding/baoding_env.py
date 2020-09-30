@@ -198,7 +198,7 @@ class BaodingEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         if self.which_task==Task.MOVE_TO_LOCATION:
             self.reward_dict['r_total'] = 5*self.reward_dict['pos_dist_1'] + self.reward_dict['drop_penalty']
         else:
-            self.reward_dict['r_total'] = 5*self.reward_dict['pos_dist_1'] + 5*self.reward_dict['pos_dist_2'] + self.reward_dict['drop_penalty'] + self.reward_dict['wrist_angle']
+            self.reward_dict['r_total'] = 5*self.reward_dict['pos_dist_1'] + 5*self.reward_dict['pos_dist_2'] + self.reward_dict['drop_penalty']
 
         #return
         if not batch_mode:
