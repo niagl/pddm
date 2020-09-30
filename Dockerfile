@@ -78,8 +78,9 @@ RUN useradd -u 11960590 -g 100 nikhila1 && \
     rm -rf /var/log/faillog
 RUN usermod -aG sudo nikhila1
 RUN mkdir -p /home/nikhila1; cp -r /root/.mujoco  /home/nikhila1/.; chown -R nikhila1:aipg_labs /home/nikhila1/.
-RUN echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/mbertran/.mujoco/mjpro150/bin' >> /home/nikhila1/.bash_profile
-RUN chown nikhila1:aipg_labs /home/nikhila1/.bash_profile
+WORKDIR /home/nikhila1
+RUN git clone https://github.com/enikhu/pddm.git
+
 
 
 

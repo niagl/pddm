@@ -190,7 +190,7 @@ def run_job(args, save_dir=None):
             #initialize counter
             counter = continue_run
             #how many iters to train for
-            num_iters += continue_run
+            # num_iters += continue_run
 
         ### check data dims
         inputSize, outputSize, acSize = check_dims(dataset_trainRand, env)
