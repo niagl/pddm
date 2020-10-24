@@ -234,6 +234,7 @@ class Distrib_Model:
                 env_dict['num_atoms'] = self.num_atoms
                 env_dict['delta_z'] = self.delta_z
                 env_dict['gamma'] = self.gamma
+                env_dict['z'] = self.z
 
                 batch_length = int(num_samples / self.num_proc)
                 index_ = [batch_length * x for x in range(self.num_proc)]

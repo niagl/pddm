@@ -102,29 +102,6 @@ class Saver:
                 'wb'),
             protocol=pickle.HIGHEST_PROTOCOL)
 
-        #on-policy training data (used in conjunction w random training data) to train the dynamics model at this iteration
-        if self.iter_num%50 == 0:
-            pickle.dump(
-                save_data.train_rollouts_onPol,
-                open(
-                    self.save_dir + '/training_data/train_rollouts_onPol_iter' +
-                    str(self.iter_num) + '.pickle', 'wb'),
-                protocol=pickle.HIGHEST_PROTOCOL)
-            pickle.dump(
-                save_data.val_rollouts_onPol,
-                open(
-                    self.save_dir + '/training_data/val_rollouts_onPol_iter' + str(
-                        self.iter_num) + '.pickle', 'wb'),
-                protocol=pickle.HIGHEST_PROTOCOL)
-
-            #mean/std info
-            pickle.dump(
-                save_data.normalization_data,
-                open(
-                    self.save_dir + '/training_data/normalization_data_' + str(
-                        self.iter_num) + '.pickle', 'wb'),
-                protocol=pickle.HIGHEST_PROTOCOL)
-
         #losses and sample complexity
         np.save(self.save_dir + '/losses/list_training_loss.npy',
                 save_data.pddm_training_losses)
@@ -157,32 +134,6 @@ class Saver:
         np.save(self.save_dir + '/losses/distib_m_prob_final.npy',
                 save_data.distrib_training_lists_to_save['m_prob_list'])
 
-        if self.iter_num%50 == 0:
-            #train/val losses from model training
-            np.save(self.save_dir + '/losses/training_losses_iter' + str(self.iter_num)
-                    + '.npy', save_data.pddm_training_lists_to_save['training_loss_list'])
-            np.save(self.save_dir + '/losses/validation_losses_iter' + str(self.iter_num)
-                    + '.npy', save_data.pddm_training_lists_to_save['val_loss_list_rand'])
-            np.save(self.save_dir + '/losses/validation_losses_xaxis_iter' + str(self.iter_num)
-                    + '.npy', save_data.pddm_training_lists_to_save['val_loss_list_xaxis'])
-            np.save(self.save_dir + '/losses/validation_onPol_losses_iter' + str(self.iter_num)
-                    + '.npy', save_data.pddm_training_lists_to_save['val_loss_list_onPol'])
-            np.save(self.save_dir + '/losses/old_losses_iter' + str(self.iter_num)
-                    + '.npy', save_data.pddm_training_lists_to_save['rand_loss_list'])
-            np.save(self.save_dir + '/losses/new_losses_iter' + str(self.iter_num)
-                    + '.npy', save_data.pddm_training_lists_to_save['onPol_loss_list'])
-
-            np.save(self.save_dir + '/losses/distrib_training_losses_iter' + str(self.iter_num)
-                    + '.npy', save_data.distrib_training_lists_to_save['training_loss_list'])
-            np.save(self.save_dir + '/losses/distrib_actual_rewards_iter' + str(self.iter_num)
-                    + '.npy', save_data.distrib_training_lists_to_save['actual_rewards_list'])
-            np.save(self.save_dir + '/losses/distrib_predicted_val_dist_iter' + str(self.iter_num)
-                    + '.npy', save_data.distrib_training_lists_to_save['predicted_val_dist_list'])
-            np.save(self.save_dir + '/losses/distrib_predicted_reward_iter' + str(self.iter_num)
-                    + '.npy', save_data.distrib_training_lists_to_save['predicted_reward_list'])
-            np.save(self.save_dir + '/losses/distib_m_prob_iter' + str(self.iter_num)
-                    + '.npy', save_data.distrib_training_lists_to_save['m_prob_list'])
-
     def save_rollout_info(self, save_data):
 
         if self.iter_num==-7:
@@ -196,15 +147,6 @@ class Saver:
                 self.save_dir + '/saved_rollouts/rollouts_info_final.pickle',
                 'wb'),
             protocol=pickle.HIGHEST_PROTOCOL)
-
-        #info from all MPC rollouts (from this iteration)
-        if self.iter_num%50 == 0:
-            pickle.dump(
-                save_data.rollouts_info,
-                open(
-                    self.save_dir + '/saved_rollouts/rollouts_info_' + str(
-                        self.iter_num) + '.pickle', 'wb'),
-                protocol=pickle.HIGHEST_PROTOCOL)
 
         #save rewards and scores (for rollouts from all iterations thus far)
         np.save(self.save_dir + '/rollouts_rewardsPerIter.npy',
