@@ -101,60 +101,24 @@ class Saver:
                 'wb'),
             protocol=pickle.HIGHEST_PROTOCOL)
 
-        #on-policy training data (used in conjunction w random training data) to train the dynamics model at this iteration
-        # if self.iter_num%50 == 0:
-        #     pickle.dump(
-        #         save_data.train_rollouts_onPol,
-        #         open(
-        #             self.save_dir + '/training_data/train_rollouts_onPol_iter' +
-        #             str(self.iter_num) + '.pickle', 'wb'),
-        #         protocol=pickle.HIGHEST_PROTOCOL)
-        #     pickle.dump(
-        #         save_data.val_rollouts_onPol,
-        #         open(
-        #             self.save_dir + '/training_data/val_rollouts_onPol_iter' + str(
-        #                 self.iter_num) + '.pickle', 'wb'),
-        #         protocol=pickle.HIGHEST_PROTOCOL)
-
-            # #mean/std info
-            # pickle.dump(
-            #     save_data.normalization_data,
-            #     open(
-            #         self.save_dir + '/training_data/normalization_data_' + str(
-            #             self.iter_num) + '.pickle', 'wb'),
-            #     protocol=pickle.HIGHEST_PROTOCOL)
-
         #losses and sample complexity
         np.save(self.save_dir + '/losses/list_training_loss.npy',
-                save_data.pddm_training_losses)
-        np.save(self.save_dir + '/losses/distrib_list_training_loss.npy',
-                save_data.distrib_training_losses)
+                save_data.training_losses)
         np.save(self.save_dir + '/datapoints_per_agg.npy',
                 save_data.training_numData)
 
         np.save(self.save_dir + '/losses/training_losses_final.npy',
-                save_data.pddm_training_lists_to_save['training_loss_list'])
+                save_data.training_lists_to_save['training_loss_list'])
         np.save(self.save_dir + '/losses/validation_losses_final.npy',
-                save_data.pddm_training_lists_to_save['val_loss_list_rand'])
+                save_data.training_lists_to_save['val_loss_list_rand'])
         np.save(self.save_dir + '/losses/validation_losses_xaxis_final.npy',
-                save_data.pddm_training_lists_to_save['val_loss_list_xaxis'])
+                save_data.training_lists_to_save['val_loss_list_xaxis'])
         np.save(self.save_dir + '/losses/validation_onPol_losses_final.npy',
-                save_data.pddm_training_lists_to_save['val_loss_list_onPol'])
+                save_data.training_lists_to_save['val_loss_list_onPol'])
         np.save(self.save_dir + '/losses/old_losses_final.npy',
-                save_data.pddm_training_lists_to_save['rand_loss_list'])
+                save_data.training_lists_to_save['rand_loss_list'])
         np.save(self.save_dir + '/losses/new_losses_final.npy',
-                save_data.pddm_training_lists_to_save['onPol_loss_list'])
-
-        np.save(self.save_dir + '/losses/distrib_training_losses_final.npy',
-                save_data.distrib_training_lists_to_save['training_loss_list'])
-        np.save(self.save_dir + '/losses/distrib_actual_rewards_final.npy',
-                save_data.distrib_training_lists_to_save['actual_rewards_list'])
-        np.save(self.save_dir + '/losses/distrib_predicted_val_dist_final.npy',
-                save_data.distrib_training_lists_to_save['predicted_val_dist_list'])
-        np.save(self.save_dir + '/losses/distrib_predicted_reward_final.npy',
-                save_data.distrib_training_lists_to_save['predicted_reward_list'])
-        np.save(self.save_dir + '/losses/distib_m_prob_final.npy',
-                save_data.distrib_training_lists_to_save['m_prob_list'])
+                save_data.training_lists_to_save['onPol_loss_list'])
 
     def save_rollout_info(self, save_data):
 
