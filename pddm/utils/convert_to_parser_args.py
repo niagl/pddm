@@ -25,6 +25,7 @@ def convert_to_parser_args(args_source=sys.argv[1:]):
     #######################
 
     parser.add_argument('--env_name', type=str)
+    parser.add_argument('--noise_params', type=lambda s: [[float(item) for item in a.split(',')] for a in s.split(';') ])
     parser.add_argument('--rollout_length', type=int)
     parser.add_argument('--num_iters', type=int, default=1)
     parser.add_argument('--num_trajectories_per_iter', type=int, default=2)

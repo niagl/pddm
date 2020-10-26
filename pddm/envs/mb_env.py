@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pddm.utils.gaussian_noise import GaussianNoiseGenerator
 
 class MBEnvWrapper:
     """
@@ -19,11 +20,16 @@ class MBEnvWrapper:
     To be used with this model-based RL codebase (PDDM).
     """
 
-    def __init__(self, env):
+    def __init__(self, env, noise_params):
 
         self.env = env.env
         self.unwrapped_env = env.env.env
         self.action_dim = self.unwrapped_env.action_space.shape[0]
+        self.noise = 0
+        if len(noise_params):
+            self.noise = GaussianNoiseGenerator(
+                noise_params, self.env.observation_space.shape[0]
+            )
 
 
     def reset(self, reset_state=None, return_start_state=False):
@@ -65,6 +71,8 @@ class MBEnvWrapper:
             reset_vel = reset_vel,
             reset_goal = reset_goal)
 
+        obs += self.noise()
+
         #return
         if return_start_state:
             return obs, reset_state
@@ -72,4 +80,6 @@ class MBEnvWrapper:
             return obs
 
     def step(self, action):
-        return self.unwrapped_env.step(action)
+        ob, rew, done, env_info = self.unwrapped_env.step(action)
+        ob += self.noise()
+        return ob, rew, done, env_info
