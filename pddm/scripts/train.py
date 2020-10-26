@@ -82,7 +82,7 @@ def run_job(args, save_dir=None):
         ########################################
 
         loader = Loader(save_dir)
-        env, dt_from_xml = create_env(env_name)
+        env, dt_from_xml = create_env(env_name, np.array(args.noise_params))
         args.dt_from_xml = dt_from_xml
         random_policy = Policy_Random(env.env)
 

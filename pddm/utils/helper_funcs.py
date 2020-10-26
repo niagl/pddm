@@ -34,10 +34,10 @@ from pddm.utils.data_structures import *
 ###########################
 
 
-def create_env(env_name):
+def create_env(env_name, noise_params):
 
     # setup environment
-    env = MBEnvWrapper(GymEnv(env_name))
+    env = MBEnvWrapper(GymEnv(env_name), noise_params)
 
     # dimensions
     dt_from_xml = env.unwrapped_env.skip * env.unwrapped_env.model.opt.timestep
