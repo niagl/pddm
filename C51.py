@@ -159,7 +159,7 @@ class Agent:
             else:
                 for j in range(self.atoms):
                     Tz = min(self.v_max, max(
-                        self.v_min, rewards[i] + self.gamma * z[next_actions[i]][i][j]))
+                        self.v_min, rewards[i] + self.gamma * self.z[j]))
                     bj = (Tz - self.v_min) / self.delta_z
                     l, u = math.floor(bj), math.ceil(bj)
                     m_prob[actions[i]][i][int(
@@ -177,7 +177,7 @@ class Agent:
             state = self.env.reset()
             while not done:
                 action = self.q.get_action(state, ep)
-                self.env.render()
+                # self.env.render()
                 next_state, reward, done, _ = self.env.step(action)
                 self.buffer.put(state, action, -
                                 1 if done else 0, next_state, done)
