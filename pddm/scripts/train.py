@@ -136,10 +136,13 @@ def run_job(args, save_dir=None):
             dataset_valRand = data_processor.convertRolloutsToDatasets(
                 rollouts_valRand)
 
-            distrib_trainDataset_rand = data_processor.convertRolloutsToDistribDatasets(
-                rollouts_trainRand)
-            distrib_valDataset = data_processor.convertRolloutsToDistribDatasets(
-                rollouts_valRand)
+            if args.use_distrib_reward:
+                distrib_trainDataset_rand = data_processor.convertRolloutsToDistribDatasets(
+                    rollouts_trainRand)
+                distrib_valDataset = data_processor.convertRolloutsToDistribDatasets(
+                    rollouts_valRand)
+
+                distrib_trainingLoss_perIter = []
 
             #onPol train/val data
             dataset_trainOnPol = Dataset()
@@ -151,7 +154,7 @@ def run_job(args, save_dir=None):
             rew_perIter = []
             scores_perIter = []
             trainingData_perIter = []
-            distrib_trainingLoss_perIter = []
+
 
             #initialize counter
             counter = 0
@@ -160,7 +163,7 @@ def run_job(args, save_dir=None):
         else:
 
             #load data
-            iter_data = loader.load_iter(continue_run-1)
+            iter_data = loader.load_iter(continue_run-1, args.use_distrib_reward)
 
             #random data
             rollouts_trainRand, rollouts_valRand = loader.load_initialData()
@@ -175,17 +178,20 @@ def run_job(args, save_dir=None):
             dataset_valRand = data_processor.convertRolloutsToDatasets(
                 rollouts_valRand)
 
-            distrib_trainDataset_rand = data_processor.convertRolloutsToDistribDatasets(
-                rollouts_trainRand)
-            distrib_valDataset_rand = data_processor.convertRolloutsToDistribDatasets(
-                rollouts_valRand)
+            if args.use_distrib_reward:
+                distrib_trainDataset_rand = data_processor.convertRolloutsToDistribDatasets(
+                    rollouts_trainRand)
+                distrib_valDataset_rand = data_processor.convertRolloutsToDistribDatasets(
+                    rollouts_valRand)
+
+                distrib_trainingLoss_perIter = iter_data.distrib_training_losses
 
             #lists for saving
             pddm_trainingLoss_perIter = iter_data.pddm_training_losses
             rew_perIter = iter_data.rollouts_rewardsPerIter
             scores_perIter = iter_data.rollouts_scoresPerIter
             trainingData_perIter = iter_data.training_numData
-            distrib_trainingLoss_perIter = iter_data.distrib_training_losses
+
 
             #initialize counter
             counter = continue_run
@@ -204,10 +210,15 @@ def run_job(args, save_dir=None):
 
         dyn_models = Dyn_Model(inputSize, outputSize, acSize, sess, params=args)
 
-        distrib_models = Distrib_Model(inputSize, acSize, sess, params=args)
+        if args.use_distrib_reward:
+            distrib_models = Distrib_Model(inputSize, acSize, sess, params=args)
 
-        mpc_rollout = MPCRollout(env, dyn_models, distrib_models, random_policy,
-                                 execute_sideRollouts, plot_sideRollouts, args)
+            mpc_rollout = MPCRollout(env, dyn_models, random_policy,
+                                     execute_sideRollouts, plot_sideRollouts, args, distrib_models)
+
+        else:
+            mpc_rollout = MPCRollout(env, dyn_models, random_policy,
+                                     execute_sideRollouts, plot_sideRollouts, args)
 
         ### init TF variables
         sess.run(tf.global_variables_initializer())
@@ -224,7 +235,8 @@ def run_job(args, save_dir=None):
 
         tensorboard_var = tf.Variable(0.0)
         loss_write_pddm = tf.summary.scalar('loss/pddm', tensorboard_var)
-        loss_write_dist = tf.summary.scalar('loss/dist', tensorboard_var)
+
+        if args.use_distrib_reward: loss_write_dist = tf.summary.scalar('loss/dist', tensorboard_var)
 
         mean_reward_write = tf.summary.scalar('reward', tensorboard_var)
         mean_score_write = tf.summary.scalar('score', tensorboard_var)
@@ -252,10 +264,11 @@ def run_job(args, save_dir=None):
             dataset_valOnPol = data_processor.convertRolloutsToDatasets(
                 rollouts_valOnPol)
 
-            distrib_trainDataset_onPol = data_processor.convertRolloutsToDistribDatasets(
-                rollouts_trainOnPol)
-            distrib_valDataset_onPol = data_processor.convertRolloutsToDistribDatasets(
-                rollouts_valOnPol)
+            if args.use_distrib_reward:
+                distrib_trainDataset_onPol = data_processor.convertRolloutsToDistribDatasets(
+                    rollouts_trainOnPol)
+                distrib_valDataset_onPol = data_processor.convertRolloutsToDistribDatasets(
+                    rollouts_valOnPol)
 
             # amount of data
             numData_train_onPol = get_num_data(rollouts_trainOnPol)
@@ -317,10 +330,12 @@ def run_job(args, save_dir=None):
             #number of training epochs
             if counter==0: nEpoch_use = args.nEpoch_init
             else: nEpoch_use = args.dyn_nEpoch
-            nEpoch_dist = args.dist_nEpoch
 
-            # freq of dist. target model_update
-            dist_target_model_update_freq = args.dist_target_model_update_freq
+            if args.use_distrib_reward:
+                nEpoch_dist = args.dist_nEpoch
+
+                # freq of dist. target model_update
+                dist_target_model_update_freq = args.dist_target_model_update_freq
 
             #train model or restore model
             if args.always_use_savedModel:
@@ -341,13 +356,15 @@ def run_job(args, save_dir=None):
                     val_loss_list_xaxis = 0,
                     rand_loss_list = 0,
                     onPol_loss_list = 0,)
-                distrib_training_loss = 0
-                distrib_training_lists_to_save = dict(
-                    training_loss_list = 0,
-                    actual_rewards_list = 0,
-                    predicted_val_dist_list = 0,
-                    predicted_reward_list = 0,
-                    m_prob_list = 0,)
+
+                if args.use_distrib_reward:
+                    distrib_training_loss = 0
+                    distrib_training_lists_to_save = dict(
+                        training_loss_list = 0,
+                        actual_rewards_list = 0,
+                        predicted_val_dist_list = 0,
+                        predicted_reward_list = 0,
+                        m_prob_list = 0,)
             else:
 
                 if (not (args.print_minimal)):
@@ -372,24 +389,26 @@ def run_job(args, save_dir=None):
                 summary = sess.run(loss_write_pddm, {tensorboard_var: pddm_training_loss})
                 writer.add_summary(summary, counter)
 
-                if (not (args.print_minimal)):
-                    print("\n#####################################")
-                    print("Training the distribution model..... iteration ", counter)
-                    print("#####################################\n")
-                    print("    amount of random data: ", distrib_trainDataset_rand.observations.shape[0])
-                    print("    amount of onPol data: ", distrib_trainDataset_onPol.observations.shape[0])
 
-                ## train distrib model with distrib_trainDataset_rand & distrib_trainDataset_onPol
-                distrib_training_loss, distrib_training_lists_to_save = distrib_models.train(
-                    distrib_trainDataset_rand,
-                    distrib_trainDataset_onPol,
-                    nEpoch_dist)
+                if args.use_distrib_reward:
+                    if(not (args.print_minimal)):
+                        print("\n#####################################")
+                        print("Training the distribution model..... iteration ", counter)
+                        print("#####################################\n")
+                        print("    amount of random data: ", distrib_trainDataset_rand.observations.shape[0])
+                        print("    amount of onPol data: ", distrib_trainDataset_onPol.observations.shape[0])
 
-                summary = sess.run(loss_write_dist, {tensorboard_var: distrib_training_loss})
-                writer.add_summary(summary, counter)
+                    ## train distrib model with distrib_trainDataset_rand & distrib_trainDataset_onPol
+                    distrib_training_loss, distrib_training_lists_to_save = distrib_models.train(
+                        distrib_trainDataset_rand,
+                        distrib_trainDataset_onPol,
+                        nEpoch_dist)
 
-            if counter % dist_target_model_update_freq == 0:
-                distrib_models.update_target_model()
+                    summary = sess.run(loss_write_dist, {tensorboard_var: distrib_training_loss})
+                    writer.add_summary(summary, counter)
+
+                    if counter % dist_target_model_update_freq == 0 :
+                        distrib_models.update_target_model()
 
             #saving rollout info
             rollouts_info = []
@@ -419,6 +438,7 @@ def run_job(args, save_dir=None):
                     starting_state,
                     starting_observation,
                     controller_type=args.controller_type,
+                    use_dist_reward=args.use_distrib_reward,
                     take_exploratory_actions=False)
 
                 # Note: can sometimes set take_exploratory_actions=True
@@ -447,16 +467,19 @@ def run_job(args, save_dir=None):
             # add these to tensorboard logs
             if counter % args.log_frequency == 0:
                 reward_write_env = tf.summary.scalar('d_reward/env_iter_'+str(counter), tensorboard_var)
-                reward_write_dist = tf.summary.scalar('d_reward/dist_iter_'+str(counter), tensorboard_var)
 
-                reward_dist = distrib_models.get_value_dist(rollouts_info[-1]['observations'][:-1, :],
+                if args.use_distrib_reward:
+                    reward_write_dist = tf.summary.scalar('d_reward/dist_iter_'+str(counter), tensorboard_var)
+                    reward_dist = distrib_models.get_value_dist(rollouts_info[-1]['observations'][:-1, :],
                                                             rollouts_info[-1]['actions'])
+
                 for i in range(len(rollouts_info[-1]['rollout_rewardsPerStep'])):
                     summary = sess.run(reward_write_env, {tensorboard_var: rollouts_info[-1]['rollout_rewardsPerStep'][i]})
                     writer.add_summary(summary, i)
 
-                    summary = sess.run(reward_write_dist, {tensorboard_var: reward_dist[i]})
-                    writer.add_summary(summary, i)
+                    if args.use_distrib_reward:
+                        summary = sess.run(reward_write_dist, {tensorboard_var: reward_dist[i]})
+                        writer.add_summary(summary, i)
                 writer.flush()
 
             #########################################################
@@ -471,13 +494,13 @@ def run_job(args, save_dir=None):
             #convert (rollouts --> dataset)
             dataset_rand_new = data_processor.convertRolloutsToDatasets(
                 rollouts_rand)
-            distrib_dataset_rand_new = data_processor.convertRolloutsToDistribDatasets(rollouts_rand)
+            if args.use_distrib_reward: distrib_dataset_rand_new = data_processor.convertRolloutsToDistribDatasets(rollouts_rand)
 
             #concat this dataset with the existing dataset_trainRand
             dataset_trainRand = concat_datasets(dataset_trainRand,
                                                 dataset_rand_new)
 
-            distrib_trainDataset_rand = concat_distrib_datasets(distrib_trainDataset_rand,
+            if args.use_distrib_reward: distrib_trainDataset_rand = concat_distrib_datasets(distrib_trainDataset_rand,
                                                    distrib_dataset_rand_new)
 
             #########################################################
@@ -512,14 +535,15 @@ def run_job(args, save_dir=None):
             trainingData_perIter.append(numData_train_rand +
                                         numData_train_onPol)
             pddm_trainingLoss_perIter.append(pddm_training_loss)
-            distrib_trainingLoss_perIter.append(distrib_training_loss)
+            if args.use_distrib_reward: distrib_trainingLoss_perIter.append(distrib_training_loss)
 
             ### stage relevant info for saving
             saver_data.training_numData = trainingData_perIter
             saver_data.pddm_training_losses = pddm_trainingLoss_perIter
             saver_data.pddm_training_lists_to_save = pddm_training_lists_to_save
-            saver_data.distrib_training_losses = distrib_trainingLoss_perIter
-            saver_data.distrib_training_lists_to_save = distrib_training_lists_to_save
+            if args.use_distrib_reward:
+                saver_data.distrib_training_losses = distrib_trainingLoss_perIter
+                saver_data.distrib_training_lists_to_save = distrib_training_lists_to_save
             # Note: the on-policy rollouts include curr iter's rollouts
             # (so next iter can be directly trained on these)
             saver_data.train_rollouts_onPol = rollouts_trainOnPol

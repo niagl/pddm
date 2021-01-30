@@ -104,7 +104,7 @@ class Saver:
         #losses and sample complexity
         np.save(self.save_dir + '/losses/list_training_loss.npy',
                 save_data.pddm_training_losses)
-        np.save(self.save_dir + '/losses/distrib_list_training_loss.npy',
+        if save_data.distrib_training_losses: np.save(self.save_dir + '/losses/distrib_list_training_loss.npy',
                 save_data.distrib_training_losses)
         np.save(self.save_dir + '/datapoints_per_agg.npy',
                 save_data.training_numData)
@@ -122,16 +122,17 @@ class Saver:
         np.save(self.save_dir + '/losses/new_losses_final.npy',
                 save_data.pddm_training_lists_to_save['onPol_loss_list'])
 
-        np.save(self.save_dir + '/losses/distrib_training_losses_final.npy',
-                save_data.distrib_training_lists_to_save['training_loss_list'])
-        np.save(self.save_dir + '/losses/distrib_actual_rewards_final.npy',
-                save_data.distrib_training_lists_to_save['actual_rewards_list'])
-        np.save(self.save_dir + '/losses/distrib_predicted_val_dist_final.npy',
-                save_data.distrib_training_lists_to_save['predicted_val_dist_list'])
-        np.save(self.save_dir + '/losses/distrib_predicted_reward_final.npy',
-                save_data.distrib_training_lists_to_save['predicted_reward_list'])
-        np.save(self.save_dir + '/losses/distib_m_prob_final.npy',
-                save_data.distrib_training_lists_to_save['m_prob_list'])
+        if save_data.distrib_training_losses:
+            np.save(self.save_dir + '/losses/distrib_training_losses_final.npy',
+                    save_data.distrib_training_lists_to_save['training_loss_list'])
+            np.save(self.save_dir + '/losses/distrib_actual_rewards_final.npy',
+                    save_data.distrib_training_lists_to_save['actual_rewards_list'])
+            np.save(self.save_dir + '/losses/distrib_predicted_val_dist_final.npy',
+                    save_data.distrib_training_lists_to_save['predicted_val_dist_list'])
+            np.save(self.save_dir + '/losses/distrib_predicted_reward_final.npy',
+                    save_data.distrib_training_lists_to_save['predicted_reward_list'])
+            np.save(self.save_dir + '/losses/distib_m_prob_final.npy',
+                    save_data.distrib_training_lists_to_save['m_prob_list'])
 
     def save_rollout_info(self, save_data):
 

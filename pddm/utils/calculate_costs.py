@@ -14,9 +14,9 @@
 
 import numpy as np
 
-def cost_per_step(pt, prev_pt, costs, actions, dones, reward_func, dist_models):
-    _, step_dones = reward_func(pt, actions)
-    step_rews = dist_models.get_value_dist(pt, actions)
+def cost_per_step(pt, prev_pt, costs, actions, dones, reward_func, dist_models, use_dist_reward):
+    step_rews, step_dones = reward_func(pt, actions)
+    if use_dist_reward: step_rews = dist_models.get_value_dist(pt, actions)
 
     dones = np.logical_or(dones, step_dones)
     costs[dones > 0] += 500
@@ -26,7 +26,7 @@ def cost_per_step(pt, prev_pt, costs, actions, dones, reward_func, dist_models):
 
 
 def calculate_costs(resulting_states_list, actions, reward_func,
-                    evaluating, take_exploratory_actions, dist_models):
+                    evaluating, take_exploratory_actions, dist_models, use_dist_reward):
     """Rank various predicted trajectories (by cost)
 
     Args:
@@ -85,7 +85,7 @@ def calculate_costs(resulting_states_list, actions, reward_func,
         pt = resulting_states[pt_number + 1]
         #update cost at the next timestep of the H-step rollout
         actions_per_step = tiled_actions[:, pt_number]
-        costs, dones = cost_per_step(pt, prev_pt, costs, actions_per_step, dones, reward_func, dist_models)
+        costs, dones = cost_per_step(pt, prev_pt, costs, actions_per_step, dones, reward_func, dist_models, use_dist_reward)
         #update
         prev_pt = np.copy(pt)
 

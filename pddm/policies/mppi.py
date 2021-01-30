@@ -79,7 +79,7 @@ class MPPI(object):
         return self.mppi_mean[0]
 
     def get_action(self, step_number, curr_state_K, actions_taken_so_far,
-                   starting_fullenvstate, evaluating, take_exploratory_actions):
+                   starting_fullenvstate, evaluating, take_exploratory_actions, use_dist_reward=False):
 
         # init vars
         curr_state_K = np.array(curr_state_K)  #[K, sa_dim]
@@ -168,7 +168,7 @@ class MPPI(object):
 
         # calculate costs [N,]
         costs, mean_costs, std_costs = calculate_costs(resulting_states_list, all_samples,
-                                self.reward_func, evaluating, take_exploratory_actions, self.distrib_models)
+                                self.reward_func, evaluating, take_exploratory_actions, self.distrib_models, use_dist_reward)
 
         # uses all paths to update action mean (for horizon steps)
         # Note: mppi_update needs rewards, so pass in -costs

@@ -27,11 +27,11 @@ class MPCRollout:
     def __init__(self,
                  env,
                  dyn_models,
-                 distrib_models,
                  rand_policy,
                  execute_sideRollouts,
                  plot_sideRollouts,
                  params,
+                 distrib_models=None,
                  evaluating=False):
 
         #init vars
@@ -67,6 +67,7 @@ class MPCRollout:
                         starting_fullenvstate,
                         starting_observation,
                         controller_type,
+                        use_dist_reward=False,
                         take_exploratory_actions=False,
                         isRandom=False):
         """
@@ -180,7 +181,7 @@ class MPCRollout:
             else:
                 best_action, predicted_states_list = get_action(
                     step, curr_state_K, actions_taken, starting_fullenvstate,
-                    self.evaluating, take_exploratory_actions)
+                    self.evaluating, take_exploratory_actions, use_dist_reward)
 
             #noise the action, as needed
             action_to_take = np.copy(best_action)

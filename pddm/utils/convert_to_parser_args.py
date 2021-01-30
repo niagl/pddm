@@ -29,6 +29,7 @@ def convert_to_parser_args(args_source=sys.argv[1:]):
     parser.add_argument('--rollout_length', type=int)
     parser.add_argument('--num_iters', type=int, default=1)
     parser.add_argument('--num_trajectories_per_iter', type=int, default=2)
+    parser.add_argument('--use_distrib_reward', action="store_true")
 
     # -1 means start from scratch... any other number says which iter to restore & continue from
     parser.add_argument('--continue_run', type=int, default=-1)

@@ -47,7 +47,7 @@ class RandomShooting(object):
                                         hold_action = params.rand_policy_hold_action,)
 
     def get_action(self, step_number, curr_state_K, actions_taken_so_far,
-                   starting_fullenvstate, evaluating, take_exploratory_actions):
+                   starting_fullenvstate, evaluating, take_exploratory_actions, use_dist_reward=False):
         """Select optimal action
 
         Args:
@@ -66,6 +66,10 @@ class RandomShooting(object):
             take_exploratory_actions
                 if True: select action based on disagreement of ensembles
                 if False: (default) select action based on predicted costs
+            use_dist_reward
+                if True: use dist rewards obtained from dist. RL model
+                if False: use env rewards
+
 
         Returns:
             best_action: optimal action to perform, according to this controller
@@ -131,7 +135,7 @@ class RandomShooting(object):
 
         #calculate costs
         costs, mean_costs, std_costs = calculate_costs(resulting_states_list, all_samples,
-                                self.reward_func, evaluating, take_exploratory_actions)
+                                self.reward_func, evaluating, take_exploratory_actions, use_dist_reward)
 
         #pick best action sequence
         best_score = np.min(costs)

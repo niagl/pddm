@@ -32,37 +32,33 @@ class Loader:
 
         return rollouts_trainRand, rollouts_valRand
 
-    def load_iter(self, iter_num):
+    def load_iter(self, iter_num, use_distrib_reward=False):
 
         data_iteration = DataPerIter()
 
         #info from all MPC rollouts (from this iteration)
         data_iteration.rollouts_info = pickle.load(
             open(
-                self.save_dir + '/saved_rollouts/rollouts_info_' + str(iter_num)
-                + '.pickle', 'rb'))
+                self.save_dir + '/saved_rollouts/rollouts_info_final.pickle', 'rb'))
 
         #on-policy data (used in conjunction w random data) to train the dynamics model at this iteration
         data_iteration.train_rollouts_onPol = pickle.load(
             open(
-                self.save_dir + '/training_data/train_rollouts_onPol_iter' +
-                str(iter_num) + '.pickle', 'rb'))
+                self.save_dir + '/training_data/train_rollouts_onPol_final.pickle', 'rb'))
         data_iteration.val_rollouts_onPol = pickle.load(
             open(
-                self.save_dir + '/training_data/val_rollouts_onPol_iter' +
-                str(iter_num) + '.pickle', 'rb'))
+                self.save_dir + '/training_data/val_rollouts_onPol_final.pickle', 'rb'))
 
         #mean/std info
         data_iteration.normalization_data = pickle.load(
             open(
-                self.save_dir + '/training_data/normalization_data_' +
-                str(iter_num) + '.pickle', 'rb'))
+                self.save_dir + '/training_data/normalization_data_final.pickle', 'rb'))
 
         #losses/rewards/scores/sample complexity (from all iterations thus far)
         data_iteration.pddm_training_losses = np.load(
             self.save_dir +
             '/losses/list_training_loss.npy').tolist()[:iter_num]
-        data_iteration.distrib_training_losses = np.load(
+        if use_distrib_reward: data_iteration.distrib_training_losses = np.load(
             self.save_dir +
             '/losses/distrib_list_training_loss.npy').tolist()[:iter_num]
         data_iteration.training_numData = np.load(
