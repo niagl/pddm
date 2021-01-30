@@ -116,7 +116,7 @@
 'dist_target_model_update_tau': [0.9],
 
 'atoms': [51],
-'use_given_Vmax_Vmin': [False],
-'Vmax': [30],
-'Vmin': [-10],
+'use_given_Vmax_Vmin': [True],
+'Vmax': [0],
+'Vmin': [-520],
 }
