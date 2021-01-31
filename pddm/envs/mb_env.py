@@ -20,7 +20,7 @@ class MBEnvWrapper:
     To be used with this model-based RL codebase (PDDM).
     """
 
-    def __init__(self, env, noise_params):
+    def __init__(self, env, noise_params=[]):
 
         self.env = env.env
         self.unwrapped_env = env.env.env

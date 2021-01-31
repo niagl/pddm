@@ -34,7 +34,7 @@ from pddm.utils.data_structures import *
 ###########################
 
 
-def create_env(env_name, noise_params):
+def create_env(env_name, noise_params=[]):
 
     # setup environment
     env = MBEnvWrapper(GymEnv(env_name), noise_params)

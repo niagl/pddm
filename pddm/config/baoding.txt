@@ -13,7 +13,6 @@
 # limitations under the License.
 
 {
-
 #########################
 ##### run options
 #########################
@@ -27,6 +26,7 @@
 
 ## env
 'env_name': ['pddm_baoding-v0'],
+'add_noise_to_env': [False],
 'noise_params': ['1.0,2.5'],
 'rollout_length': [100],
 'num_iters': [200],

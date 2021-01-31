@@ -86,7 +86,8 @@ def run_job(args, save_dir=None):
         ########################################
 
         loader = Loader(save_dir)
-        env, dt_from_xml = create_env(env_name, np.array(args.noise_params))
+        if args.add_noise_to_env: env, dt_from_xml = create_env(env_name, np.array(args.noise_params))
+        else: env, dt_from_xml = create_env(env_name)
         args.dt_from_xml = dt_from_xml
         random_policy = Policy_Random(env.env)
         writer = tf.summary.FileWriter(args.tensorboard_dir)
