@@ -25,8 +25,8 @@ class MBEnvWrapper:
         self.env = env.env
         self.unwrapped_env = env.env.env
         self.action_dim = self.unwrapped_env.action_space.shape[0]
-        self.noise = 0
-        if len(noise_params):
+        self.noise_params = noise_params
+        if len(self.noise_params):
             self.noise = GaussianNoiseGenerator(
                 noise_params, self.env.observation_space.shape[0]
             )
@@ -71,7 +71,7 @@ class MBEnvWrapper:
             reset_vel = reset_vel,
             reset_goal = reset_goal)
 
-        obs += self.noise()
+        if len(self.noise_params): obs += self.noise()
 
         #return
         if return_start_state:
@@ -81,5 +81,5 @@ class MBEnvWrapper:
 
     def step(self, action):
         ob, rew, done, env_info = self.unwrapped_env.step(action)
-        ob += self.noise()
+        if len(self.noise_params): ob += self.noise()
         return ob, rew, done, env_info
