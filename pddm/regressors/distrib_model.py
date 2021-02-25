@@ -138,6 +138,19 @@ class Distrib_Model:
         val_dist_ = np.sum(np.multiply(val_dist[0], np.array(self.z)), axis = 1)
         return val_dist_
 
+    def get_value_hist_dist(self, state, action):
+        # state , action : dims b x n
+        hist_dist = self.sess.run(
+            [
+                self.predicted_output
+            ],
+            feed_dict={
+                self.inputs_:  np.concatenate((np.array(state), np.array(action)), axis=1)
+            })
+
+        val_dist_ = np.sum(np.multiply(hist_dist[0], np.array(self.z)), axis = 1)
+        return hist_dist, val_dist_
+
     def update_target_model(self):
         """
         After some time interval update the target model to be same with model

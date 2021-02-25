@@ -69,3 +69,34 @@ class Loader:
             self.save_dir + '/rollouts_scoresPerIter.npy').tolist()[:iter_num]
 
         return data_iteration
+
+    def load_data(self, use_distrib_reward=False):
+
+        data_iteration = DataPerIter()
+
+        #info from all MPC rollouts (from this iteration)
+        data_iteration.rollouts_info = pickle.load(
+            open(
+                self.save_dir + '/saved_rollouts/rollouts_info_final.pickle', 'rb'))
+
+        #on-policy data (used in conjunction w random data) to train the dynamics model at this iteration
+        data_iteration.train_rollouts_onPol = pickle.load(
+            open(
+                self.save_dir + '/training_data/train_rollouts_onPol_final.pickle', 'rb'))
+        data_iteration.val_rollouts_onPol = pickle.load(
+            open(
+                self.save_dir + '/training_data/val_rollouts_onPol_final.pickle', 'rb'))
+
+        #mean/std info
+        data_iteration.normalization_data = pickle.load(
+            open(
+                self.save_dir + '/training_data/normalization_data_final.pickle', 'rb'))
+
+        #losses/rewards/scores/sample complexity (from all iterations thus far)
+        data_iteration.pddm_training_losses = []
+        if use_distrib_reward: data_iteration.distrib_training_losses = []
+        data_iteration.training_numData = []
+        data_iteration.rollouts_rewardsPerIter = []
+        data_iteration.rollouts_scoresPerIter = []
+
+        return data_iteration
