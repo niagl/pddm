@@ -74,11 +74,6 @@ class Loader:
 
         data_iteration = DataPerIter()
 
-        #info from all MPC rollouts (from this iteration)
-        data_iteration.rollouts_info = pickle.load(
-            open(
-                self.save_dir + '/saved_rollouts/rollouts_info_final.pickle', 'rb'))
-
         #on-policy data (used in conjunction w random data) to train the dynamics model at this iteration
         data_iteration.train_rollouts_onPol = pickle.load(
             open(
